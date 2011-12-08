@@ -5,6 +5,7 @@
          web-server/http/cookie-parse
          web-server/http
          web-server/formlets
+	 web-server/templates
          web-server/http/redirect
          web-server/http/bindings
          racket/list
@@ -14,7 +15,6 @@
          web-server/servlet-env)
 (require (planet "main.rkt" ("jaymccarthy" "mongodb.plt" 1 11)))
 (require (planet "main.ss" ("dherman" "json.plt" 3 0)))
-;(require (file "../OAuth-2.0/authorization.rkt"))
 
 (define m (create-mongo))(define d (make-mongo-db m "eggtimer"))
 (current-mongo-db d)
@@ -45,18 +45,24 @@
 	     (head
 	      (title ,(string-append "Task Timer - " username))
 	      (link ((type "text/css")(rel "stylesheet")(href "http://yui.yahooapis.com/3.4.1/build/cssfonts/fonts-min.css"))" ")
+	      (link ((type "text/css")(rel "stylesheet")(href "eggtimer.css")) " ")
+	      (link ((href "http://fonts.googleapis.com/css?family=Geostar+Fill") (rel "stylesheet") (type "text/css"))" ")
 	      (script ((type "text/javascript")(src "eggtimer.js")) " ")
 	      (script ((src "http://yui.yahooapis.com/3.4.1/build/yui/yui-min.js")(charset "utf-8"))" ")
 	      (script ((type "text/javascript")(src "jquery-1.6.4.js")) " "))
+
 	     (body ((class "yui3-skin-sam yui-skin-sam")(bgcolor "#e5e5e5"))
-		   (div ((id "timertab")(style "margin-left:25%;margin-right:25%;"))
+		   (div ((style "align-text:center;margin-left:21%;margin-right:21%;font-family: 'Geostar Fill',cursive;"))
+			 (h1 "Task Timer"))
+		   (div ((id "timertab")(style "margin-left:21%;margin-right:21%;"))
 			(ul
 			 (li
 			  (a ((href "#tasks-list")) "Create Tasks"))
 			 (li
-			  (a ((href "#datatable")) "Data")))
+			  (a ((href "#datatable")) "Data"))
+			 )
 			(div
-			 (div ((id "tasks-table")(style "padding: 5px"))
+			 (div ((id "tasks-list")(style "padding: 5px"))
 			      (a ((href "#")(onclick "add_task()")) "Add Task")
 			      (table ((id "tasks-table"))
 				     (tr
@@ -64,11 +70,21 @@
 				      (th ((style "min-width:100px")) "Category")
 				      (th ((style "min-width:100px")) "Notes")
 				      (th ((colspan "2")(style "min-width:200px")) ""))))
-			      (div ((id "datatable")) 
-				   (div ((id "all-tasks")))))
-			(script ((type "text/javascript"))
-				"YUI({filter: 'raw'}).use('yui', 'tabview', function(Y){ init(Y)});"))))))
-	(redirect-to "https://shadgregory.net:8081"))))
+			      (div ((id "datatable"))
+				   (div ((id "all-tasks")))
+				   )
+			      );div
+			);timertab
+
+		   (script ((type "text/javascript")) "init();")
+		   );body
+	     );html
+	   );response
+	  );let
+	(redirect-to "https://shadgregory.net:8081")
+	);if
+    );lambda
+  );define
 
 (define get-msg
   (lambda (request)
@@ -128,12 +144,27 @@
         (td ,{(to-string (required (password-input))) . => . new_password2})))
    (list username new_password1 new_password2)))
 
+(define current-username
+  (lambda (req)
+    (define cookies (request-cookies req))
+    (define id-cookie
+      (findf (lambda (c)
+	       (string=? "id" (client-cookie-name c)))
+	     cookies))
+    (if id-cookie
+	(client-cookie-value id-cookie)
+	(redirect-to "https://shadgregory.net:8081?msg=baduser"))))
+	  
+(define get-cat-hours
+  (lambda (req)
+    '()))
+
 (define get-tasks
   (lambda (req)
     (let ((task-match (mongo-dict-query
 		 "task"
 		 (make-hasheq
-		  (list (cons 'username "shad"))))))
+		  (list (cons 'username (current-username req)))))))
     (response/xexpr
      `(tasks
        ,@(for/list ((t task-match))
@@ -184,15 +215,15 @@
     (define msg (get-msg req))
     (response/xexpr
      `(html
-       (head (title "Tommy Windich")
+       (head (title "Task Timer")
              (script ((type "text/javascript")(src "jquery-1.6.4.js")) " ")
-             (script ((type "text/javascript") (src "yahoo-min.js")) " ")
-             (script ((type "text/javascript") (src "event-min.js")) " ")
-             (script ((type "text/javascript") (src "datasource-min.js")) " ")
+	     	      (link ((href "http://fonts.googleapis.com/css?family=Geostar+Fill") (rel "stylesheet") (type "text/css"))" ")
              (script ((type "text/javascript")(src "eggtimer.js"))" "))
        (body ((bgcolor "#e5e5e5"))
              (div ((id "center_content")
-                   (style "margin-left:auto;margin-right:auto;width:700px;"))
+		   (style "margin-left:auto;margin-right:auto;width:700px;"))
+		   (div ((style "align-text:center;margin-left:auto;margin-right:auto;width:700px;font-family: 'Geostar Fill',cursive;"))
+			 (h1 "Task Timer"))
                   (div ((style "border:1px solid black;background:#99CCFF;padding-top:5px;padding-left:5px;"))
                        (div ((id "message_div") (style "color:red;")) 
                             ,(cond

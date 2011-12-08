@@ -30,7 +30,16 @@
         for (i=0;i<tasks.length;i++) {
           var category = tasks[i].getElementsByTagName("category")[0];
           var value = tasks[i].getElementsByTagName("hours")[0];
-          myDataValues.push({"category":category.firstChild.nodeValue, "hours":parseFloat(value.firstChild.nodeValue)});
+          var exists = false;
+          for(j=0;j<myDataValues.length;j++) {
+            if (myDataValues[j].category == category.firstChild.nodeValue) {
+                myDataValues[j].hours += parseFloat(value.firstChild.nodeValue);
+                exists = true;
+                break;
+            }
+          }   
+          if (!exists)
+            myDataValues.push({"category":category.firstChild.nodeValue, "hours":parseFloat(value.firstChild.nodeValue)});
         }
 
         var pieGraph = new Y.Chart({

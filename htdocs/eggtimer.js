@@ -17,7 +17,6 @@ function check_login () {
 
 function add_task() {
     var d = new Date();
-//    $("#no-tasks").hide();
     var task_count = $('#tasks-table tr').length - 1;
     var task_row = $("<tr id='task_" + 
 		     task_count + 
@@ -48,7 +47,6 @@ function add_task() {
 	    });
 	});
     });
-
 }
 
 function end_task(count) {
@@ -58,7 +56,6 @@ function end_task(count) {
 	alert("Either bug number or comment is required.");
 	return false;
     }
-    alert($("#auto_cat" + count).val());
 
     $.ajax({
 	url: "save-task",
@@ -79,9 +76,7 @@ function cancel_task(count) {
     $('#task_' + count).remove();
 }
 
-function init(Y) {
-    var tabview = new Y.TabView({srcNode:'#timertab'});
-    tabview.render();
+function init() {
     YUI().use("datasource", 
 	      "datasource-get", 
 	      "datasource-io", 
@@ -90,8 +85,14 @@ function init(Y) {
 	      "datatable-scroll", 
 	      "datatype-date",
 	      "autocomplete",
+	      "charts",
+	      "event",
+	      "event-base",
+	      "tabview",
 	      "datatable-datasource", 
 	      function(Y){
+		  var tabview = new Y.TabView({srcNode:'#timertab'});
+		  tabview.render();
 		  var formatDates = function (o){
 		      var dateObj = eval(o.value);
 		      return (dateObj.getMonth()+1) + "/" + dateObj.getDate() + "/" + dateObj.getFullYear();
@@ -143,8 +144,22 @@ function init(Y) {
 		      width: "500px",
 		      height: "600px"
 		  });
-		  dataSource.after("response", function(){
-		      table.render("all-tasks");
+
+		  var tab;
+		  Y.on('domready', function(e) {
+		      tab = new Y.Tab({
+			  label: "Chart",
+			  content: '<iframe scrolling="no" src="chart.html" height="430" width="430" id="chart-frame"></iframe>'
+		      });
+		      tabview.add(tab);
+		      tabview.render();
+		  });
+		  Y.on('available',function(e) {
+		      //document.getElementById('chart-frame').src = 'chart.html';
+		      window.frames['chart-frame'].reload();
+		  },"#chart-frame");
+		  tabview.on('selectionChange', function(e) {
+		      document.getElementById('chart-frame').src = 'chart.html';
 		  });
 	      });
 }
