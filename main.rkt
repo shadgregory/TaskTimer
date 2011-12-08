@@ -81,7 +81,7 @@
 	     );html
 	   );response
 	  );let
-	(redirect-to "https://shadgregory.net:8081")
+	(redirect-to "")
 	);if
     );lambda
   );define
@@ -153,7 +153,7 @@
 	     cookies))
     (if id-cookie
 	(client-cookie-value id-cookie)
-	(redirect-to "https://shadgregory.net:8081?msg=baduser"))))
+	(redirect-to "/?msg=baduser"))))
 	  
 (define get-cat-hours
   (lambda (req)
@@ -194,7 +194,7 @@
                       (car (formlet-process user-formlet req)) #:secure? #t))
        (redirect-to "timer" #:headers (list (cookie->header id-cookie))))
       (else
-       (redirect-to "https://shadgregory.net:8081?msg=baduser")))))
+       (redirect-to "/?msg=baduser")))))
 
 (define validate-new-user
   (lambda (req)
@@ -206,9 +206,9 @@
             (define id-cookie (make-cookie "id" (car data-list) #:secure? #t))
             (redirect-to "timer" #:headers (list (cookie->header id-cookie))))
            (else
-            (redirect-to "https://shadgregory.net:8081?msg=notnew"))))
+            (redirect-to "/?msg=notnew"))))
         (else
-         (redirect-to "https://shadgregory.net:8081?msg=nomatch"))))))
+         (redirect-to "/?msg=nomatch"))))))
 
 (define logon-page
   (lambda (req)
