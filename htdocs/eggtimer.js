@@ -6,6 +6,12 @@ function cmp_passwords () {
 	return false;
     }
 }
+function logout() {
+    YUI().use('cookie', function(Y) {
+	Y.Cookie.remove("id");
+	window.location = "/";
+    });
+}
 
 function check_login () {
     if ($('#password').val() == '') {
@@ -89,18 +95,27 @@ function init() {
 	      "event",
 	      "event-base",
 	      "tabview",
+	      "cookie",
 	      "datatable-datasource", 
 	      function(Y){
+		  var id_value = Y.Cookie.get("id");
+		  if (id_value == null) {
+		      window.location = "/";
+		  }
 		  var tabview = new Y.TabView({srcNode:'#timertab'});
 		  tabview.render();
 		  var formatDates = function (o){
 		      var dateObj = eval(o.value);
 		      return (dateObj.getMonth()+1) + "/" + dateObj.getDate() + "/" + dateObj.getFullYear();
 		  };
+		  var noNullValue = function(o) {
+		      if (!o.value) return '';
+		      else return o.value;
+		  } 
 		  var cols = [
 		      {key: "Bug Number", sortable: true},
 		      {key: "Category", sortable: true},
-		      {key: "Comment", sortable: true},
+		      {key: "Comment", formatter:noNullValue, sortable: true},
 		      {key: "Hours", sortable: true},
 		      {key: "End", formatter: formatDates, sortable: true}
 		  ];
@@ -154,12 +169,15 @@ function init() {
 		      tabview.add(tab);
 		      tabview.render();
 		  });
-		  Y.on('available',function(e) {
-		      //document.getElementById('chart-frame').src = 'chart.html';
-		      window.frames['chart-frame'].reload();
-		  },"#chart-frame");
 		  tabview.on('selectionChange', function(e) {
-		      document.getElementById('chart-frame').src = 'chart.html';
+              if (e.newVal.get('label') == 'Chart')
+    		      document.getElementById('chart-frame').src = 'chart.html';
+              if (e.newVal.get('label') == 'Data') {
+		        table.datasource.load({
+			        request:""
+		        });
+		        table.render("#all-tasks");
+              }
 		  });
-	      });
+   });
 }

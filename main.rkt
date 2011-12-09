@@ -5,13 +5,13 @@
          web-server/http/cookie-parse
          web-server/http
          web-server/formlets
-	 web-server/templates
+         web-server/templates
          web-server/http/redirect
          web-server/http/bindings
          racket/list
-	 racket/date
+         racket/date
          file/md5
-	 xml
+         xml
          web-server/servlet-env)
 (require (planet "main.rkt" ("jaymccarthy" "mongodb.plt" 1 11)))
 (require (planet "main.ss" ("dherman" "json.plt" 3 0)))
@@ -44,16 +44,17 @@
 	   `(html
 	     (head
 	      (title ,(string-append "Task Timer - " username))
-	      (link ((type "text/css")(rel "stylesheet")(href "http://yui.yahooapis.com/3.4.1/build/cssfonts/fonts-min.css"))" ")
+	      (link ((type "text/css")(rel "stylesheet")(href "fonts-min.css"))" ")
 	      (link ((type "text/css")(rel "stylesheet")(href "eggtimer.css")) " ")
 	      (link ((href "http://fonts.googleapis.com/css?family=Geostar+Fill") (rel "stylesheet") (type "text/css"))" ")
 	      (script ((type "text/javascript")(src "eggtimer.js")) " ")
-	      (script ((src "http://yui.yahooapis.com/3.4.1/build/yui/yui-min.js")(charset "utf-8"))" ")
+	      (script ((src "yui-min.js")(charset "utf-8"))" ")
 	      (script ((type "text/javascript")(src "jquery-1.6.4.js")) " "))
 
 	     (body ((class "yui3-skin-sam yui-skin-sam")(bgcolor "#e5e5e5"))
-		   (div ((style "align-text:center;margin-left:21%;margin-right:21%;font-family: 'Geostar Fill',cursive;"))
-			 (h1 "Task Timer"))
+		   (div ((style "border:1px solid black;background-color:#CCFFFF;align-text:center;margin-left:21%;margin-right:21%;"))
+			 (h1 ((style "font-family:'Geostar Fill',cursive;"))"Task Timer")
+			 (a ((href "#")(onclick "logout();")) "Logout"))
 		   (div ((id "timertab")(style "margin-left:21%;margin-right:21%;"))
 			(ul
 			 (li
@@ -75,7 +76,6 @@
 				   )
 			      );div
 			);timertab
-
 		   (script ((type "text/javascript")) "init();")
 		   );body
 	     );html
@@ -85,6 +85,7 @@
 	);if
     );lambda
   );define
+
 
 (define get-msg
   (lambda (request)
@@ -222,7 +223,7 @@
        (body ((bgcolor "#e5e5e5"))
              (div ((id "center_content")
 		   (style "margin-left:auto;margin-right:auto;width:700px;"))
-		   (div ((style "align-text:center;margin-left:auto;margin-right:auto;width:700px;font-family: 'Geostar Fill',cursive;"))
+		   (div ((style "border:1px solid black;background-color:#CCFFFF;align-text:center;margin-left:auto;margin-right:auto;width:700px;font-family: 'Geostar Fill',cursive;"))
 			 (h1 "Task Timer"))
                   (div ((style "border:1px solid black;background:#99CCFF;padding-top:5px;padding-left:5px;"))
                        (div ((id "message_div") (style "color:red;")) 
