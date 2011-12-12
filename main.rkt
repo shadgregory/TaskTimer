@@ -32,6 +32,24 @@
   ([username #:required]
    [password #:required]))
 
+(define doctor-bugnum
+  (lambda (t)
+    (if (string? (mongo-dict-ref t 'bugnumber))
+	(mongo-dict-ref t 'bugnumber)
+	"")))
+
+(define doctor-category
+  (lambda (t)
+    (if (string? (mongo-dict-ref t 'category))
+	(mongo-dict-ref t 'category)
+	"")))
+
+(define doctor-comment
+  (lambda (t)
+    (if (string? (mongo-dict-ref t 'comment))
+	(mongo-dict-ref t 'comment)
+	"")))
+
 (define timer-page
   (lambda (req)
     (define task-match (mongo-dict-query
@@ -79,26 +97,28 @@
                                       (th ((colspan "2")(style "min-width:200px")) ""))
 				     ,@(for/list ((t task-match))
 						 (set! count (add1 count))
-						 `(tr
+						 `(tr ((id ,(string-append "task_" (number->string count))))
 						  (td
 						   (input 
 						    ((id ,(string-append "starttime_" (number->string count)))
-						     (value ,(number->string(current-milliseconds)))
+						     (value ,(mongo-dict-ref t 'starttime))
 						     (type "hidden")))
 						   (input ((type "text")
 							   (onchange ,(string-append "update_bugnum(" (number->string count) ")"))
 							   (id ,(string-append "bug_num_" (number->string count)))
-							   (value ,(mongo-dict-ref t 'bugnumber)))))
+							   (value ,(doctor-bugnum t))
+							   )))
 						  (td
 						   (input ((type "text")
 							   (id ,(string-append "auto_cat" (number->string count)))
 							   (onchange ,(string-append "update_cat(" (number->string count) ")"))
-							   ;(value ,(mongo-dict-ref t 'category))
+							   (value ,(doctor-category t))
 							   )))
 						  (td
 						   (input ((type "text")
 							   (id ,(string-append "comment_" (number->string count)))
 							   (onchange ,(string-append "update_notes(" (number->string count) ")"))
+							   (value ,(doctor-comment t))
 						   )))
 						  (td ((colspan "2"))
 						      (button ((onclick ,(string-append "cancel_task(" (number->string count) ")"))) "CANCEL")
