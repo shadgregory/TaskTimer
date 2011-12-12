@@ -23,8 +23,9 @@
    (bugnumber)
    (category)
    (comment)
+   (in-progress)
    (starttime #:required)
-   (endtime #:required)))
+   (endtime)))
 
 (define-mongo-struct
   user "user"
@@ -40,49 +41,49 @@
              cookies))
     (if id-cookie
         (let ((username (client-cookie-value id-cookie)))
-	  (response/xexpr
-	   `(html
-	     (head
-	      (title ,(string-append "Task Timer - " username))
-	      (link ((type "text/css")(rel "stylesheet")(href "fonts-min.css"))" ")
-	      (link ((type "text/css")(rel "stylesheet")(href "eggtimer.css")) " ")
-	      (link ((href "http://fonts.googleapis.com/css?family=Geostar+Fill") (rel "stylesheet") (type "text/css"))" ")
-	      (script ((type "text/javascript")(src "eggtimer.js")) " ")
-	      (script ((src "yui-min.js")(charset "utf-8"))" ")
-	      (script ((type "text/javascript")(src "jquery-1.6.4.js")) " "))
-
-	     (body ((class "yui3-skin-sam yui-skin-sam")(bgcolor "#e5e5e5"))
-		   (div ((style "border:1px solid black;background-color:#CCFFFF;align-text:center;margin-left:21%;margin-right:21%;"))
-			 (h1 ((style "font-family:'Geostar Fill',cursive;"))"Task Timer")
-			 (a ((href "#")(onclick "logout();")) "Logout"))
-		   (div ((id "timertab")(style "margin-left:21%;margin-right:21%;"))
-			(ul
-			 (li
-			  (a ((href "#tasks-list")) "Create Tasks"))
-			 (li
-			  (a ((href "#datatable")) "Data"))
-			 )
-			(div
-			 (div ((id "tasks-list")(style "padding: 5px"))
-			      (a ((href "#")(onclick "add_task()")) "Add Task")
-			      (table ((id "tasks-table"))
-				     (tr
-				      (th ((style "min-width:100px")) "Bug Number")
-				      (th ((style "min-width:100px")) "Category")
-				      (th ((style "min-width:100px")) "Notes")
-				      (th ((colspan "2")(style "min-width:200px")) ""))))
-			      (div ((id "datatable"))
-				   (div ((id "all-tasks")))
-				   )
-			      );div
-			);timertab
-		   (script ((type "text/javascript")) "init();")
-		   );body
-	     );html
-	   );response
-	  );let
-	(redirect-to "")
-	);if
+          (response/xexpr
+           `(html
+             (head
+              (title ,(string-append "Task Timer - " username))
+              (link ((type "text/css")(rel "stylesheet")(href "fonts-min.css"))" ")
+              (link ((type "text/css")(rel "stylesheet")(href "eggtimer.css")) " ")
+              (link ((href "http://fonts.googleapis.com/css?family=Geostar+Fill") (rel "stylesheet") (type "text/css"))" ")
+              (script ((type "text/javascript")(src "eggtimer.js")) " ")
+              (script ((src "yui-min.js")(charset "utf-8"))" ")
+              (script ((type "text/javascript")(src "jquery-1.6.4.js")) " "))
+             
+             (body ((class "yui3-skin-sam yui-skin-sam")(bgcolor "#e5e5e5"))
+                   (div ((style "border:1px solid black;background-color:#CCFFFF;align-text:center;margin-left:21%;margin-right:21%;"))
+                        (h1 ((style "font-family:'Geostar Fill',cursive;"))"Task Timer")
+                        (a ((href "#")(onclick "logout();")) "Logout"))
+                   (div ((id "timertab")(style "margin-left:21%;margin-right:21%;"))
+                        (ul
+                         (li
+                          (a ((href "#tasks-list")) "Create Tasks"))
+                         (li
+                          (a ((href "#datatable")) "Data"))
+                         )
+                        (div
+                         (div ((id "tasks-list")(style "padding: 5px"))
+                              (a ((href "#")(onclick "add_task()")) "Add Task")
+                              (table ((id "tasks-table"))
+                                     (tr
+                                      (th ((style "min-width:100px")) "Bug Number")
+                                      (th ((style "min-width:100px")) "Category")
+                                      (th ((style "min-width:100px")) "Notes")
+                                      (th ((colspan "2")(style "min-width:200px")) ""))))
+                         (div ((id "datatable"))
+                              (div ((id "all-tasks")))
+                              )
+                         );div
+                        );timertab
+                   (script ((type "text/javascript")) "init();")
+                   );body
+             );html
+           );response
+          );let
+        (redirect-to "")
+        );if
     );lambda
   );define
 
@@ -150,12 +151,12 @@
     (define cookies (request-cookies req))
     (define id-cookie
       (findf (lambda (c)
-	       (string=? "id" (client-cookie-name c)))
-	     cookies))
+               (string=? "id" (client-cookie-name c)))
+             cookies))
     (if id-cookie
-	(client-cookie-value id-cookie)
-	(redirect-to "/?msg=baduser"))))
-	  
+        (client-cookie-value id-cookie)
+        (redirect-to "/?msg=baduser"))))
+
 (define get-cat-hours
   (lambda (req)
     '()))
@@ -163,26 +164,93 @@
 (define get-tasks
   (lambda (req)
     (let ((task-match (mongo-dict-query
-		 "task"
-		 (make-hasheq
-		  (list (cons 'username (current-username req)))))))
+                       "task"
+                       (make-hasheq
+                        (list (cons 'username (current-username req)))))))
+      (response/xexpr
+       `(tasks
+         ,@(for/list ((t task-match))
+             (let* ((enddate (seconds->date (round (/ (string->number (mongo-dict-ref t 'endtime)) 1000))))
+                    (year (date-year enddate))
+                    (day (date-day enddate))
+                    (month (date-month enddate)))
+               `(task
+                 (hours ,(real->decimal-string (/ (/ (/ (- (string->number (mongo-dict-ref t 'endtime))
+                                                           (string->number (mongo-dict-ref t 'starttime))) 1000) 60) 60)))
+                 (endtime ,(mongo-dict-ref t 'endtime))
+                 (enddate ,(string-append "new Date(" (mongo-dict-ref t 'endtime) ")"))
+                 (starttime ,(mongo-dict-ref t 'starttime))
+                 (comment ,(mongo-dict-ref t 'comment))
+                 (category ,(mongo-dict-ref t 'category))
+                 (bugnumber ,(mongo-dict-ref t 'bugnumber))))))
+       #:mime-type #"application/xml"))))
+
+(define update-category
+  (lambda (req)
+    (let*
+        ((bindings (request-bindings req))
+         (starttime (extract-binding/single 'starttime bindings))
+         (category (extract-binding/single 'category bindings))
+         (task-match (mongo-dict-query
+                      "task"
+                      (make-hasheq
+                       (list (cons 'starttime starttime))))))
+      (for/list ((t (mongo-dict-query "task" (hasheq))))
+        (if (string=? (task-starttime t) starttime)
+            (set-task-category! t category)
+            (display "no match"))))
     (response/xexpr
-     `(tasks
-       ,@(for/list ((t task-match))
-		   (let* ((enddate (seconds->date (round (/ (string->number (mongo-dict-ref t 'endtime)) 1000))))
-			  (year (date-year enddate))
-			  (day (date-day enddate))
-			  (month (date-month enddate)))
-		   `(task
-		     (hours ,(real->decimal-string (/ (/ (/ (- (string->number (mongo-dict-ref t 'endtime))
-					       (string->number (mongo-dict-ref t 'starttime))) 1000) 60) 60)))
-		     (endtime ,(mongo-dict-ref t 'endtime))
-		     (enddate ,(string-append "new Date(" (mongo-dict-ref t 'endtime) ")"))
-		     (starttime ,(mongo-dict-ref t 'starttime))
-		     (comment ,(mongo-dict-ref t 'comment))
-		     (category ,(mongo-dict-ref t 'category))
-		     (bugnumber ,(mongo-dict-ref t 'bugnumber))))))
-     #:mime-type #"application/xml"))))
+     '(msg "Category Updated")
+     #:mime-type #"application/xml")))
+
+(define update-comment
+  (lambda (req)
+    (let*
+        ((bindings (request-bindings req))
+         (starttime (extract-binding/single 'starttime bindings))
+         (comment (extract-binding/single 'comment bindings))
+         (task-match (mongo-dict-query
+                      "task"
+                      (make-hasheq
+                       (list (cons 'starttime starttime))))))
+      (for/list ((t (mongo-dict-query "task" (hasheq))))
+        (if (string=? (task-starttime t) starttime)
+            (set-task-comment! t comment)
+            (display "no match"))))
+    (response/xexpr
+     '(msg "Notes Updated")
+     #:mime-type #"application/xml")))
+
+(define create-task
+  (lambda (req)
+    (define bindings (request-bindings req))
+    (let*
+        ((starttime (extract-binding/single 'starttime bindings))
+         (username (current-username req)))
+      (make-task #:username username
+                 #:in-progress 1
+                 #:starttime starttime))
+    (response/xexpr
+     '(msg "Task created")
+     #:mime-type #"application/xml")))
+
+(define update-bugnum
+  (lambda (req)
+    (let*
+        ((bindings (request-bindings req))
+         (starttime (extract-binding/single 'starttime bindings))
+         (bugnumber (extract-binding/single 'bugnumber bindings))
+         (task-match (mongo-dict-query
+                      "task"
+                      (make-hasheq
+                       (list (cons 'starttime starttime))))))
+      (for/list ((t (mongo-dict-query "task" (hasheq))))
+        (if (string=? (task-starttime t) starttime)
+            (set-task-bugnumber! t bugnumber)
+            (display "no match"))))
+    (response/xexpr
+     '(msg "Bug Number Updated")
+     #:mime-type #"application/xml")))
 
 (define validate-user
   (lambda (req)
@@ -218,13 +286,13 @@
      `(html
        (head (title "Task Timer")
              (script ((type "text/javascript")(src "jquery-1.6.4.js")) " ")
-	     	      (link ((href "http://fonts.googleapis.com/css?family=Geostar+Fill") (rel "stylesheet") (type "text/css"))" ")
+             (link ((href "http://fonts.googleapis.com/css?family=Geostar+Fill") (rel "stylesheet") (type "text/css"))" ")
              (script ((type "text/javascript")(src "eggtimer.js"))" "))
        (body ((bgcolor "#e5e5e5"))
              (div ((id "center_content")
-		   (style "margin-left:auto;margin-right:auto;width:700px;"))
-		   (div ((style "border:1px solid black;background-color:#CCFFFF;align-text:center;margin-left:auto;margin-right:auto;width:700px;font-family: 'Geostar Fill',cursive;"))
-			 (h1 "Task Timer"))
+                   (style "margin-left:auto;margin-right:auto;width:700px;"))
+                  (div ((style "border:1px solid black;background-color:#CCFFFF;align-text:center;margin-left:auto;margin-right:auto;width:700px;font-family: 'Geostar Fill',cursive;"))
+                       (h1 "Task Timer"))
                   (div ((style "border:1px solid black;background:#99CCFF;padding-top:5px;padding-left:5px;"))
                        (div ((id "message_div") (style "color:red;")) 
                             ,(cond
@@ -250,29 +318,31 @@
                              (br)
                              (input ((type "submit")(name "login")(value "Create Account")))
                              ))))))))
-    
+
 (define save-task
   (lambda (req)
-    (define cookies (request-cookies req))
-    (define id-cookie
-      (findf (lambda (c)
-	       (string=? "id" (client-cookie-name c)))
-    cookies))
     (define bindings (request-bindings req))
     (let*
-	((bugnumber (extract-binding/single 'bugnumber bindings))
-	 (comment (extract-binding/single 'comment bindings))
-	 (endtime (extract-binding/single 'endtime bindings))
-	 (category (extract-binding/single 'category bindings))
-	 (username (client-cookie-value id-cookie))
-	 (starttime (extract-binding/single 'starttime bindings)))
-      	  
-      (make-task #:username username
-		 #:bugnumber bugnumber
-		 #:comment comment
-		 #:category category
-		 #:endtime endtime
-		 #:starttime starttime))
+        ((bugnumber (extract-binding/single 'bugnumber bindings))
+         (comment (extract-binding/single 'comment bindings))
+         (endtime (extract-binding/single 'endtime bindings))
+         (category (extract-binding/single 'category bindings))
+         (starttime (extract-binding/single 'starttime bindings))
+         (task-match (mongo-dict-query
+                      "task"
+                      (make-hasheq
+                       (list (cons 'starttime starttime))))))
+      
+      (for/list ((t (mongo-dict-query "task" (hasheq))))
+        (if (string=? (task-starttime t) starttime)
+            (begin
+              (set-task-bugnumber! t bugnumber)
+              (set-task-endtime! t endtime)
+              (set-task-category! t category)
+              (set-task-comment! t comment)
+              (set-task-in-progress! t 0)
+              (set-task-username! t (current-username req)))
+            '())))
     (response/xexpr
      '(msg "Task saved."))))
 
@@ -283,20 +353,24 @@
   (dispatch-rules
    (("") logon-page)
    (("save-task") save-task)
+   (("create-task") create-task)
    (("get-tasks") get-tasks)
    (("validate-new-user") validate-new-user)
    (("validate-user") validate-user)
+   (("update-bugnum") update-bugnum)
+   (("update-category") update-category)
+   (("update-comment") update-comment)
    (("timer") timer-page)))
 
 (serve/servlet start
                #:launch-browser? #f
                #:quit? #f
-	       #:ssl? #t
+               #:ssl? #t
                #:listen-ip #f
                #:port 8081
-               #:ssl-cert (build-path "/home/shad/mysrc/eggtimer" "server-cert.pem")
-               #:ssl-key (build-path "/home/shad/mysrc/eggtimer" "private-key.pem")
+               #:ssl-cert (build-path "/home/shad/src/eggtimer" "server-cert.pem")
+               #:ssl-key (build-path "/home/shad/src/eggtimer" "private-key.pem")
                #:servlet-regexp #rx""
                #:extra-files-paths (list 
-				    (build-path "/home/shad/mysrc/eggtimer/htdocs"))
+                                    (build-path "/home/shad/src/eggtimer/htdocs"))
                #:servlet-path "/main.rkt")

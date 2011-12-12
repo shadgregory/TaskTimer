@@ -21,6 +21,33 @@ function check_login () {
     return true;
 }
 
+function update_bugnum (count) {
+    $.ajax({
+    url: "update-bugnum",
+    context: document.body,
+    data: "starttime=" + $("#starttime_" + count).val() +
+        "&bugnumber=" + $("#bug_num_" + count).val()
+    });
+}
+
+function update_cat (count) {
+    $.ajax({
+    url: "update-category",
+    context: document.body,
+    data: "starttime=" + $("#starttime_" + count).val() +
+        "&category=" + $("#auto_cat" + count).val()
+    });
+}
+
+function update_notes (count) {
+    $.ajax({
+    url: "update-comment",
+    context: document.body,
+    data: "starttime=" + $("#starttime_" + count).val() +
+        "&comment=" + $("#comment_" + count).val()
+    });
+}
+
 function add_task() {
     var d = new Date();
     var task_count = $('#tasks-table tr').length - 1;
@@ -30,11 +57,17 @@ function add_task() {
 		     d.getTime() +
 		     "' id='starttime_"+
 		     task_count +
-		     "'><input type='text' id='bug_num_"+ 
+		     "'><input type='text' onchange='update_bugnum(" + 
 		     task_count + 
-		     "'></td><td><input type='text' id='auto_cat" + 
+		     ")' id='bug_num_"+ 
 		     task_count + 
-		     "'></td><td><input type='text' id='comment_" + 
+		     "'></td><td><input type='text' onchange='update_cat(" + 
+		     task_count + 
+		     ")' id='auto_cat" + 
+		     task_count + 
+		     "'></td><td><input type='text' onchange='update_notes("+ 
+		     task_count + 
+		     ")' id='comment_" + 
 		     task_count + 
 		     "'></td><td colspan='2'><button onclick='cancel_task(" + 
 		     task_count + 
@@ -52,6 +85,13 @@ function add_task() {
 		source: ['QA (R&D)','QA (Support)','R&D','R&D Planning','R&D Documentation','IT']
 	    });
 	});
+    });
+    $.ajax({
+	url: "create-task",
+	context: document.body,
+	data: "starttime=" + $("#starttime_" + task_count).val() + 
+	    "&in-progress=1",
+	success: function() {}
     });
 }
 

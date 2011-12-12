@@ -24,6 +24,8 @@
         xmlhttp.open("GET","get-tasks",false);
         xmlhttp.send();
         xmlDoc=xmlhttp.responseXML; 
+        if (!xmlDoc)
+          return false;
         var tasks = xmlDoc.getElementsByTagName("task");
         var myDataValues = new Array();
 
