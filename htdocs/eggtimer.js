@@ -158,8 +158,8 @@ function init() {
 		      else return o.value;
 		  } 
 		  var cols = [
-		      {key: "Bug Number", sortable: true},
-		      {key: "Category", sortable: true},
+		      {key: "Bug Number", formatter:noNullValue, sortable: true},
+		      {key: "Category", formatter:noNullValue, sortable: true},
 		      {key: "Comment", formatter:noNullValue, sortable: true},
 		      {key: "Hours", sortable: true},
 		      {key: "End", formatter: formatDates, sortable: true}
