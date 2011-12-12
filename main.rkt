@@ -169,10 +169,6 @@
         (client-cookie-value id-cookie)
         (redirect-to "/?msg=baduser"))))
 
-(define get-cat-hours
-  (lambda (req)
-    '()))
-
 (define get-tasks
   (lambda (req)
     (let ((task-match (mongo-dict-query
@@ -181,11 +177,8 @@
                         (list (cons 'username (current-username req)))))))
       (response/xexpr
        `(tasks
-         ,@(for/list ((t task-match))
-             (let* ((enddate (seconds->date (round (/ (string->number (mongo-dict-ref t 'endtime)) 1000))))
-                    (year (date-year enddate))
-                    (day (date-day enddate))
-                    (month (date-month enddate)))
+         ,@(for/list ((t task-match) #:when (string? (mongo-dict-ref t 'endtime)))
+             (let* ((enddate (seconds->date (round (/ (string->number (mongo-dict-ref t 'endtime)) 1000)))))
                `(task
                  (hours ,(real->decimal-string (/ (/ (/ (- (string->number (mongo-dict-ref t 'endtime))
                                                            (string->number (mongo-dict-ref t 'starttime))) 1000) 60) 60)))
