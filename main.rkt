@@ -46,6 +46,7 @@
              cookies))
     (if id-cookie
         (let ((username (client-cookie-value id-cookie)))
+	  (define count -1)
           (response/xexpr
            `(html
              (head
@@ -66,8 +67,7 @@
                          (li
                           (a ((href "#tasks-list")) "Create Tasks"))
                          (li
-                          (a ((href "#datatable")) "Data"))
-                         )
+                          (a ((href "#datatable")) "Data")))
                         (div
                          (div ((id "tasks-list")(style "padding: 5px"))
                               (a ((href "#")(onclick "add_task()")) "Add Task")
@@ -78,10 +78,33 @@
                                       (th ((style "min-width:100px")) "Notes")
                                       (th ((colspan "2")(style "min-width:200px")) ""))
 				     ,@(for/list ((t task-match))
+						 (set! count (add1 count))
 						 `(tr
 						  (td
-						   (input ((input "text")))
-						   ))
+						   (input 
+						    ((id ,(string-append "starttime_" (number->string count)))
+						     (value ,(number->string(current-milliseconds)))
+						     (type "hidden")))
+						   (input ((type "text")
+							   (onchange ,(string-append "update_bugnum(" (number->string count) ")"))
+							   (id ,(string-append "bug_num_" (number->string count)))
+							   (value ,(mongo-dict-ref t 'bugnumber)))))
+						  (td
+						   (input ((type "text")
+							   (id ,(string-append "auto_cat" (number->string count)))
+							   (onchange ,(string-append "update_cat(" (number->string count) ")"))
+							   ;(value ,(mongo-dict-ref t 'category))
+							   )))
+						  (td
+						   (input ((type "text")
+							   (id ,(string-append "comment_" (number->string count)))
+							   (onchange ,(string-append "update_notes(" (number->string count) ")"))
+						   )))
+						  (td ((colspan "2"))
+						      (button ((onclick ,(string-append "cancel_task(" (number->string count) ")"))) "CANCEL")
+						      (button ((onclick ,(string-append "end_task(" (number->string count) ")"))) "END")
+						   );td
+						  );tr
 						 );for/list
 				     ))
                          (div ((id "datatable"))
