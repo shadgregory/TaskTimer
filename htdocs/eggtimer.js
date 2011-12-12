@@ -119,6 +119,11 @@ function end_task(count) {
 }
 
 function cancel_task(count) {
+    $.ajax({
+	url: "remove-doc",
+	content: document.body,
+	data: "starttime=" +
+            $("#starttime_" +count).val()});
     $('#task_' + count).remove();
 }
 

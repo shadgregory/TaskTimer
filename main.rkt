@@ -34,6 +34,11 @@
 
 (define timer-page
   (lambda (req)
+    (define task-match (mongo-dict-query
+			"task"
+			(make-hasheq
+			 (list (cons 'username (current-username req))
+			       (cons 'in-progress 1)))))
     (define cookies (request-cookies req))
     (define id-cookie
       (findf (lambda (c)
@@ -71,7 +76,14 @@
                                       (th ((style "min-width:100px")) "Bug Number")
                                       (th ((style "min-width:100px")) "Category")
                                       (th ((style "min-width:100px")) "Notes")
-                                      (th ((colspan "2")(style "min-width:200px")) ""))))
+                                      (th ((colspan "2")(style "min-width:200px")) ""))
+				     ,@(for/list ((t task-match))
+						 `(tr
+						  (td
+						   (input ((input "text")))
+						   ))
+						 );for/list
+				     ))
                          (div ((id "datatable"))
                               (div ((id "all-tasks")))
                               )
@@ -185,6 +197,18 @@
                  (bugnumber ,(mongo-dict-ref t 'bugnumber))))))
        #:mime-type #"application/xml"))))
 
+(define remove-doc
+  (lambda (req)
+    (define bindings (request-bindings req))
+    (define starttime (extract-binding/single 'starttime bindings))
+    (mongo-collection-remove!
+     (mongo-collection (current-mongo-db) "task")
+               (make-hasheq
+            (list (cons 'starttime starttime))))
+    (response/xexpr
+     '(msg "Deleted")
+       #:mime-type #"application/xml")))
+
 (define update-category
   (lambda (req)
     (let*
@@ -282,6 +306,7 @@
 (define logon-page
   (lambda (req)
     (define msg (get-msg req))
+
     (response/xexpr
      `(html
        (head (title "Task Timer")
@@ -360,6 +385,7 @@
    (("update-bugnum") update-bugnum)
    (("update-category") update-category)
    (("update-comment") update-comment)
+   (("remove-doc") remove-doc)
    (("timer") timer-page)))
 
 (serve/servlet start
@@ -368,9 +394,9 @@
                #:ssl? #t
                #:listen-ip #f
                #:port 8081
-               #:ssl-cert (build-path "/home/shad/src/eggtimer" "server-cert.pem")
-               #:ssl-key (build-path "/home/shad/src/eggtimer" "private-key.pem")
+               #:ssl-cert (build-path "." "server-cert.pem")
+               #:ssl-key (build-path "." "private-key.pem")
                #:servlet-regexp #rx""
                #:extra-files-paths (list 
-                                    (build-path "/home/shad/src/eggtimer/htdocs"))
+                                    (build-path "./htdocs"))
                #:servlet-path "/main.rkt")
