@@ -35,7 +35,7 @@ function update_cat (count) {
     url: "update-category",
     context: document.body,
     data: "starttime=" + $("#starttime_" + count).val() +
-        "&category=" + $("#auto_cat" + count).val()
+        "&category=" + encodeURIComponent($("#auto_cat" + count).val())
     });
 }
 
@@ -141,6 +141,7 @@ function init() {
 	      "event-base",
 	      "tabview",
 	      "cookie",
+	      "gallery-paginator",
 	      "datatable-datasource", 
 	      function(Y){
 		  var id_value = Y.Cookie.get("id");
@@ -204,6 +205,31 @@ function init() {
 		      width: "500px",
 		      height: "600px"
 		  });
+		  // Paginator
+		  function updatePaginator(
+		      /* object */	state) {
+		      this.setPage(state.page, true);
+		      this.setRowsPerPage(state.rowsPerPage, true);
+		      sendRequest();
+		  }
+
+		  var pg = new Y.Paginator({
+		      totalRecords: 25,
+		      rowsPerPage: 25,
+		      template: '{FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink}',
+		      firstPageLinkLabel:    '|&lt;',
+		      previousPageLinkLabel: '&lt;',
+		      nextPageLinkLabel:     '&gt;',
+		      lastPageLinkLabel:     '&gt;|'
+		  });
+		  pg.on('changeRequest', updatePaginator);
+		  pg.render('#pg');
+
+		  dataSource.on('response', function(e)	{
+		      pg.setTotalRecords(e.response.meta.totalRecords, true);
+		      pg.render();
+		  });
+		  //End Paginator
 
 		  var tab;
 		  Y.on('domready', function(e) {
@@ -215,14 +241,14 @@ function init() {
 		      tabview.render();
 		  });
 		  tabview.on('selectionChange', function(e) {
-              if (e.newVal.get('label') == 'Chart')
-    		      document.getElementById('chart-frame').src = 'chart.html';
-              if (e.newVal.get('label') == 'Data') {
-		        table.datasource.load({
-			        request:""
-		        });
-		        table.render("#all-tasks");
-              }
+		      if (e.newVal.get('label') == 'Chart')
+    			  document.getElementById('chart-frame').src = 'chart.html';
+		      if (e.newVal.get('label') == 'Data') {
+		          table.datasource.load({
+			      request:""
+		          });
+		          table.render("#all-tasks");
+		      }
 		  });
-   });
+	      });
 }

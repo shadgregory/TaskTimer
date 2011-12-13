@@ -128,6 +128,7 @@
 						 );for/list
 				     ))
                          (div ((id "datatable"))
+			      (div ((id "pg")) " ")
                               (div ((id "all-tasks")))
                               )
                          );div
