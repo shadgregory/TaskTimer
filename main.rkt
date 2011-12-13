@@ -78,7 +78,11 @@
              
              (body ((class "yui3-skin-sam yui-skin-sam")(bgcolor "#e5e5e5"))
                    (div ((style "border:1px solid black;background-color:#CCFFFF;align-text:center;margin-left:21%;margin-right:21%;"))
-                        (h1 ((style "font-family:'Geostar Fill',cursive;"))"Task Timer")
+			(table
+			 (tr
+			  (td (img ((src "tasktimer.png")(width "128")(height "128"))))
+			  (td
+			   (h1 ((style "font-family:'Geostar Fill',cursive;"))"Task Timer"))))
                         (a ((href "#")(onclick "logout();")) "Logout"))
                    (div ((id "timertab")(style "margin-left:21%;margin-right:21%;"))
                         (ul
@@ -354,7 +358,12 @@
              (div ((id "center_content")
                    (style "margin-left:auto;margin-right:auto;width:700px;"))
                   (div ((style "border:1px solid black;background-color:#CCFFFF;align-text:center;margin-left:auto;margin-right:auto;width:700px;font-family: 'Geostar Fill',cursive;"))
-                       (h1 "Task Timer"))
+		       (table
+			(tr
+			 (td
+			  (img ((src "tasktimer.png")(width "128")(height "128"))))
+			 (td
+			  (h1 "Task Timer")))))
                   (div ((style "border:1px solid black;background:#99CCFF;padding-top:5px;padding-left:5px;"))
                        (div ((id "message_div") (style "color:red;")) 
                             ,(cond
