@@ -27,11 +27,18 @@
    (starttime #:required)
    (endtime)))
 
+(define-mongo-struct paused "paused"
+  ((username #:required)
+   (starttime #:required)
+   (beginpause #:required)
+   (endpause)))
+
 (define-mongo-struct
   user "user"
   ([username #:required]
    [password #:required]))
 
+;gotta do something about this
 (define doctor-bugnum
   (lambda (t)
     (if (string? (mongo-dict-ref t 'bugnumber))
@@ -49,6 +56,31 @@
     (if (string? (mongo-dict-ref t 'comment))
 	(mongo-dict-ref t 'comment)
 	"")))
+
+(define pause
+  (lambda (req)
+    (define bindings (request-bindings req))
+    (make-paused
+     #:username (current-username req)
+     #:starttime (extract-binding/single 'starttime bindings)
+     #:beginpause (round (current-inexact-milliseconds)))
+     (response/xexpr
+      '(msg "Paused")
+      #:mime-type #"application/xml")))
+
+(define unpause
+  (lambda (req)
+    (define bindings (request-bindings req))
+    (define paused-match (mongo-dict-query
+			  "paused"
+			  (make-hasheq
+			   (list (cons 'username (current-username req))
+				 (cons 'starttime (extract-binding/single 'starttime bindings))))))
+    (for/list ((p paused-match))
+	      (set-paused-endpause! p (round (current-inexact-milliseconds))))
+    (response/xexpr
+     '(msg "Unpaused")
+    #:mime-type #"application/xml")))
 
 (define timer-page
   (lambda (req)
@@ -76,30 +108,30 @@
               (script ((src "yui-min.js")(charset "utf-8"))" ")
               (script ((type "text/javascript")(src "jquery-1.6.4.js")) " "))
              
-             (body ((class "yui3-skin-sam yui-skin-sam")(bgcolor "#e5e5e5"))
-                   (div ((style "border:1px solid black;background-color:#CCFFFF;align-text:center;margin-left:21%;margin-right:21%;"))
+             (body ((class "yui3-skin-sam yui-skin-sam")(bgcolor "#4d4d4d"))
+                   (div ((style "border:1px solid black;background-color:#20b2aa;align-text:center;margin-left:18%;margin-right:18%;"))
 			(table
 			 (tr
 			  (td (img ((src "tasktimer.png")(width "128")(height "128"))))
 			  (td
 			   (h1 ((style "font-family:'Geostar Fill',cursive;"))"Task Timer"))))
                         (a ((href "#")(onclick "logout();")) "Logout"))
-                   (div ((id "timertab")(style "margin-left:21%;margin-right:21%;"))
+                   (div ((id "timertab")(style "margin-left:18%;margin-right:18%;"))
                         (ul
                          (li
                           (a ((href "#tasks-list")) "Create Tasks"))
                          (li
                           (a ((href "#datatable")) "Data")))
                         (div
-                         (div ((id "tasks-list")(style "padding: 5px"))
+                         (div ((id "tasks-list")(style "min-height:430px;padding: 5px"))
                               (a ((href "#")(onclick "add_task()")) "Add Task")
                               (table ((id "tasks-table"))
                                      (tr
                                       (th ((style "min-width:100px")) "Bug Number")
                                       (th ((style "min-width:100px")) "Category")
                                       (th ((style "min-width:100px")) "Notes")
-                                      (th ((colspan "2")(style "min-width:200px")) ""))
-				     ,@(for/list ((t task-match))
+                                      (th ((colspan "3")(style "min-width:200px")) ""))
+    				     ,@(for/list ((t task-match))
 						 (set! count (add1 count))
 						 `(tr ((id ,(string-append "task_" (number->string count))))
 						  (td
@@ -124,14 +156,23 @@
 							   (onchange ,(string-append "update_notes(" (number->string count) ")"))
 							   (value ,(doctor-comment t))
 						   )))
-						  (td ((colspan "2"))
+						  (td ((colspan "3"))
 						      (button ((onclick ,(string-append "cancel_task(" (number->string count) ")"))) "CANCEL")
-						      (button ((onclick ,(string-append "end_task(" (number->string count) ")"))) "END")
+						      (button (
+							       (id ,(string-append "end_" (number->string count)))
+							       (onclick ,(string-append "end_task(" (number->string count) ")"))) "END")
+						      (button (
+							       (id ,(string-append "pause_" (number->string count)))
+							       (onclick ,(string-append "pause(" (number->string count) ")"))) "PAUSE")
+						      (button (
+							       (style "display:none")
+							       (id ,(string-append "unpause_" (number->string count)))
+							       (onclick ,(string-append "unpause(" (number->string count) ")" ))) "UNPAUSE")
 						   );td
 						  );tr
 						 );for/list
 				     ))
-                         (div ((id "datatable"))
+                         (div ((style "min-height:430px")(id "datatable"))
 			      (div ((id "pg")) " ")
                               (div ((id "all-tasks")))
                               )
@@ -217,6 +258,21 @@
         (client-cookie-value id-cookie)
         (redirect-to "/?msg=baduser"))))
 
+(define calculate-hours
+  (lambda (starttime endtime username)
+    (let ((total-seconds (- endtime starttime))
+	  (paused-match (mongo-dict-query 
+			 "paused"
+			 (make-hasheq
+			  (list (cons 'username username)
+				(cons 'starttime starttime))))))
+      (for/list ((p paused-match) #:when (mongo-dict-ref p 'endpause))
+		(set! total-seconds 
+		      (- total-seconds 
+			 (- endtime starttime))))
+                 (real->decimal-string (/ (/ (/ total-seconds 1000) 60) 60)))))
+					  
+
 (define get-tasks
   (lambda (req)
     (let ((task-match (mongo-dict-query
@@ -228,8 +284,8 @@
          ,@(for/list ((t task-match) #:when (string? (mongo-dict-ref t 'endtime)))
              (let* ((enddate (seconds->date (round (/ (string->number (mongo-dict-ref t 'endtime)) 1000)))))
                `(task
-                 (hours ,(real->decimal-string (/ (/ (/ (- (string->number (mongo-dict-ref t 'endtime))
-                                                           (string->number (mongo-dict-ref t 'starttime))) 1000) 60) 60)))
+		 (hours ,(calculate-hours (string->number (mongo-dict-ref t 'starttime))
+					  (string->number (mongo-dict-ref t 'endtime))(current-username req)))
                  (endtime ,(mongo-dict-ref t 'endtime))
                  (enddate ,(string-append "new Date(" (mongo-dict-ref t 'endtime) ")"))
                  (starttime ,(mongo-dict-ref t 'starttime))
@@ -347,17 +403,17 @@
 (define logon-page
   (lambda (req)
     (define msg (get-msg req))
-
+    
     (response/xexpr
      `(html
        (head (title "Task Timer")
              (script ((type "text/javascript")(src "jquery-1.6.4.js")) " ")
              (link ((href "http://fonts.googleapis.com/css?family=Geostar+Fill") (rel "stylesheet") (type "text/css"))" ")
              (script ((type "text/javascript")(src "eggtimer.js"))" "))
-       (body ((bgcolor "#e5e5e5"))
+       (body ((bgcolor "#4d4d4d"))
              (div ((id "center_content")
                    (style "margin-left:auto;margin-right:auto;width:700px;"))
-                  (div ((style "border:1px solid black;background-color:#CCFFFF;align-text:center;margin-left:auto;margin-right:auto;width:700px;font-family: 'Geostar Fill',cursive;"))
+                  (div ((style "border:1px solid black;background-color:#20b2aa;align-text:center;margin-left:auto;margin-right:auto;width:700px;font-family: 'Geostar Fill',cursive;"))
 		       (table
 			(tr
 			 (td
@@ -432,6 +488,8 @@
    (("update-category") update-category)
    (("update-comment") update-comment)
    (("remove-doc") remove-doc)
+   (("pause") pause)
+   (("unpause") unpause)
    (("timer") timer-page)))
 
 (serve/servlet start

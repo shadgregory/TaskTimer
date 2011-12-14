@@ -48,6 +48,30 @@ function update_notes (count) {
     });
 }
 
+function pause(count) {
+    $.ajax({
+	url: "pause",
+	data: "starttime=" + $("#starttime_" + count).val(),
+	context:document.body,
+	success: function() {
+	    $("#unpause_" + count).show();
+	    $("#pause_" + count).hide();
+	}
+    });
+}
+
+function unpause(count) {
+    $.ajax({
+	url: "unpause",
+	data: "starttime=" + $("#starttime_" + count).val(),
+	context:document.body,
+	success: function() {
+	    $("#pause_" + count).show();
+	    $("#unpause_" + count).hide();
+	}
+    });
+}
+
 function add_task() {
     var d = new Date();
     var task_count = $('#tasks-table tr').length - 1;
@@ -69,11 +93,21 @@ function add_task() {
 		     task_count + 
 		     ")' id='comment_" + 
 		     task_count + 
-		     "'></td><td colspan='2'><button onclick='cancel_task(" + 
+		     "'></td><td colspan='3'><button onclick='cancel_task(" + 
 		     task_count + 
-		     ")'>CANCEL</button><button onclick='end_task(" +
+		     ")'>CANCEL</button><button id='end_'"+
+		     task_count +
+		     " onclick='end_task(" +
 		     task_count + 
-		     ")'>END</button></td></tr>");
+		     ")'>END</button><button id='pause_'" + 
+		     task_count + 
+		     " onclick='pause(" +
+		     task_count +
+		     ")'>PAUSE</button><button style='display:none;' id='unpause_'" + 
+		     task_count +
+		     " onclick='unpause(" +
+		     task_count +
+		     ")'>UNPAUSE</button></td></tr>");
 
 
     $("#tasks-table tr:last").after(task_row);
@@ -214,8 +248,7 @@ function init() {
 		  }
 
 		  var pg = new Y.Paginator({
-		      totalRecords: 25,
-		      rowsPerPage: 25,
+		      rowsPerPage: 20,
 		      template: '{FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink}',
 		      firstPageLinkLabel:    '|&lt;',
 		      previousPageLinkLabel: '&lt;',
@@ -235,7 +268,7 @@ function init() {
 		  Y.on('domready', function(e) {
 		      tab = new Y.Tab({
 			  label: "Chart",
-			  content: '<iframe scrolling="no" src="chart.html" height="430" width="430" id="chart-frame"></iframe>'
+			  content: '<center><iframe scrolling="no" src="chart.html" height="430" width="430" id="chart-frame"></iframe></center>'
 		      });
 		      tabview.add(tab);
 		      tabview.render();
