@@ -21,118 +21,116 @@ function check_login () {
     return true;
 }
 
-function update_bugnum (count) {
+function update_bugnum (st) {
     $.ajax({
     url: "update-bugnum",
     context: document.body,
-    data: "starttime=" + $("#starttime_" + count).val() +
-        "&bugnumber=" + $("#bug_num_" + count).val()
+    data: "starttime=" + $("#starttime_" + st).val() +
+        "&bugnumber=" + $("#bug_num_" + st).val()
     });
 }
 
-function update_cat (count) {
+function update_cat (st) {
     $.ajax({
     url: "update-category",
     context: document.body,
-    data: "starttime=" + $("#starttime_" + count).val() +
-        "&category=" + encodeURIComponent($("#auto_cat" + count).val())
+    data: "starttime=" + $("#starttime_" + st).val() +
+        "&category=" + encodeURIComponent($("#auto_cat" + st).val())
     });
 }
 
-function update_notes (count) {
+function update_notes (st) {
     $.ajax({
     url: "update-comment",
     context: document.body,
-    data: "starttime=" + $("#starttime_" + count).val() +
-        "&comment=" + $("#comment_" + count).val()
+    data: "starttime=" + $("#starttime_" + st).val() +
+        "&comment=" + $("#comment_" + st).val()
     });
 }
 
-function pause(count) {
+function pause(st) {
     $.ajax({
 	url: "pause",
-	data: "starttime=" + $("#starttime_" + count).val(),
+	data: "starttime=" + st,
 	context:document.body,
 	success: function() {
-	    $("#unpause_" + count).show();
-	    $("#pause_" + count).hide();
+	    $("#pause_" + st).hide();
+	    $("#unpause_" + st).show();
 	}
     });
 }
 
-function unpause(count) {
+function unpause(st) {
     $.ajax({
 	url: "unpause",
-	data: "starttime=" + $("#starttime_" + count).val(),
+	data: "starttime=" + st,
 	context:document.body,
 	success: function() {
-	    $("#pause_" + count).show();
-	    $("#unpause_" + count).hide();
+	    $("#pause_" + st).show();
+	    $("#unpause_" + st).hide();
 	}
     });
 }
 
 function add_task() {
     var d = new Date();
-    var task_count = $('#tasks-table tr').length - 1;
     var task_row = $("<tr id='task_" + 
-		     task_count + 
+		     d.getTime() + 
 		     "'><td><input type='hidden' value='" + 
 		     d.getTime() +
 		     "' id='starttime_"+
-		     task_count +
+		     d.getTime() +
 		     "'><input type='text' onchange='update_bugnum(" + 
-		     task_count + 
+		     d.getTime() + 
 		     ")' id='bug_num_"+ 
-		     task_count + 
+		     d.getTime() + 
 		     "'></td><td><input type='text' onchange='update_cat(" + 
-		     task_count + 
+		     d.getTime() + 
 		     ")' id='auto_cat" + 
-		     task_count + 
+		     d.getTime() + 
 		     "'></td><td><input type='text' onchange='update_notes("+ 
-		     task_count + 
+		     d.getTime() + 
 		     ")' id='comment_" + 
-		     task_count + 
+		     d.getTime() + 
 		     "'></td><td colspan='3'><button onclick='cancel_task(" + 
-		     task_count + 
-		     ")'>CANCEL</button><button id='end_'"+
-		     task_count +
-		     " onclick='end_task(" +
-		     task_count + 
-		     ")'>END</button><button id='pause_'" + 
-		     task_count + 
-		     " onclick='pause(" +
-		     task_count +
-		     ")'>PAUSE</button><button style='display:none;' id='unpause_'" + 
-		     task_count +
-		     " onclick='unpause(" +
-		     task_count +
+		     d.getTime() + 
+		     ")'>CANCEL</button><button id='end_"+
+		     d.getTime() +
+		     "' onclick='end_task(" +
+		     d.getTime() + 
+		     ")'>END</button><button style='display:inline;' id='pause_" + 
+		     d.getTime() + 
+		     "' onclick='pause(" +
+		     d.getTime() +
+		     ")'>PAUSE</button><button style='display:none;' id='unpause_" + 
+		     d.getTime() +
+		     "' onclick='unpause(" +
+		     d.getTime() +
 		     ")'>UNPAUSE</button></td></tr>");
-
 
     $("#tasks-table tr:last").after(task_row);
 
     YUI().use('event', 'autocomplete', 'autocomplete-highlighters', function(Y) {
-	Y.Event.onAvailable('#auto_cat' + task_count, function(e) {
-	    Y.one('#auto_cat'+task_count).plug(Y.Plugin.AutoComplete, {
+	Y.Event.onAvailable('#auto_cat' + d.getTime(), function(e) {
+	    Y.one('#auto_cat'+d.getTime()).plug(Y.Plugin.AutoComplete, {
 		resultHighlighter: 'phraseMatch',
-		source: ['QA (R&D)','QA (Support)','R&D','R&D Planning','R&D Documentation','IT']
+		source: ['QA (R&D)','QA (Support)','R&D','R&D Planning','R&D Documentation','Lunch','IT','TEST']
 	    });
 	});
     });
     $.ajax({
 	url: "create-task",
 	context: document.body,
-	data: "starttime=" + $("#starttime_" + task_count).val() + 
+	data: "starttime=" + $("#starttime_" + d.getTime()).val() + 
 	    "&in-progress=1",
 	success: function() {}
     });
 }
 
-function end_task(count) {
+function end_task(st) {
     var d = new Date();
-    if($("#bug_num_"+count).val() == "" &&
-       $("#comment_"+count).val() == "") {
+    if($("#bug_num_"+st).val() == "" &&
+       $("#comment_"+st).val() == "") {
 	alert("Either bug number or comment is required.");
 	return false;
     }
@@ -140,25 +138,25 @@ function end_task(count) {
     $.ajax({
 	url: "save-task",
 	context: document.body,
-	data: "bugnumber=" + $("#bug_num_" + count).val() +
-	    "&comment=" + $("#comment_" + count).val() +
-	    "&category=" + encodeURIComponent($("#auto_cat" + count).val()) +
-	    "&starttime=" + $("#starttime_" + count).val() +
+	data: "bugnumber=" + $("#bug_num_" + st).val() +
+	    "&comment=" + $("#comment_" + st).val() +
+	    "&category=" + encodeURIComponent($("#auto_cat" + st).val()) +
+	    "&starttime=" + $("#starttime_" + st).val() +
 	    "&endtime=" + d.getTime(),
 	success: function() {
 	    alert("task saved");
-	    $('#task_' + count).remove();
+	    $('#task_' + st).remove();
 	}
     });
 }
 
-function cancel_task(count) {
+function cancel_task(st) {
     $.ajax({
 	url: "remove-doc",
 	content: document.body,
 	data: "starttime=" +
-            $("#starttime_" +count).val()});
-    $('#task_' + count).remove();
+            $("#starttime_" +st).val()});
+    $('#task_' + st).remove();
 }
 
 function init() {
@@ -171,6 +169,7 @@ function init() {
 	      "datatype-date",
 	      "autocomplete",
 	      "charts",
+	      "calendar",
 	      "event",
 	      "event-base",
 	      "tabview",

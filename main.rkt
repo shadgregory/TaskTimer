@@ -96,7 +96,6 @@
              cookies))
     (if id-cookie
         (let ((username (client-cookie-value id-cookie)))
-	  (define count -1)
           (response/xexpr
            `(html
              (head
@@ -132,62 +131,48 @@
                                       (th ((style "min-width:100px")) "Notes")
                                       (th ((colspan "3")(style "min-width:200px")) ""))
     				     ,@(for/list ((t task-match))
-						 (set! count (add1 count))
-						 `(tr ((id ,(string-append "task_" (number->string count))))
+						 `(tr ((id ,(string-append "task_" (mongo-dict-ref t 'starttime))))
 						  (td
 						   (input 
-						    ((id ,(string-append "starttime_" (number->string count)))
+						    ((id ,(string-append "starttime_" (mongo-dict-ref t 'starttime)))
 						     (value ,(mongo-dict-ref t 'starttime))
 						     (type "hidden")))
 						   (input ((type "text")
-							   (onchange ,(string-append "update_bugnum(" (number->string count) ")"))
-							   (id ,(string-append "bug_num_" (number->string count)))
+							   (onchange ,(string-append "update_bugnum(" (mongo-dict-ref t 'starttime) ")"))
+							   (id ,(string-append "bug_num_" (mongo-dict-ref t 'starttime)))
 							   (value ,(doctor-bugnum t))
 							   )))
 						  (td
 						   (input ((type "text")
-							   (id ,(string-append "auto_cat" (number->string count)))
-							   (onchange ,(string-append "update_cat(" (number->string count) ")"))
+							   (id ,(string-append "auto_cat" (mongo-dict-ref t 'starttime)))
+							   (onchange ,(string-append "update_cat(" (mongo-dict-ref t 'starttime) ")"))
 							   (value ,(doctor-category t))
 							   )))
 						  (td
 						   (input ((type "text")
-							   (id ,(string-append "comment_" (number->string count)))
-							   (onchange ,(string-append "update_notes(" (number->string count) ")"))
+							   (id ,(string-append "comment_" (mongo-dict-ref t 'starttime)))
+							   (onchange ,(string-append "update_notes(" (mongo-dict-ref t 'starttime) ")"))
 							   (value ,(doctor-comment t))
 						   )))
 						  (td ((colspan "3"))
-						      (button ((onclick ,(string-append "cancel_task(" (number->string count) ")"))) "CANCEL")
+						      (button ((onclick ,(string-append "cancel_task(" (mongo-dict-ref t 'starttime) ")"))) "CANCEL")
 						      (button (
-							       (id ,(string-append "end_" (number->string count)))
-							       (onclick ,(string-append "end_task(" (number->string count) ")"))) "END")
+							       (id ,(string-append "end_" (mongo-dict-ref t 'starttime)))
+							       (onclick ,(string-append "end_task(" (mongo-dict-ref t 'starttime) ")"))) "END")
 						      (button (
-							       (id ,(string-append "pause_" (number->string count)))
-							       (onclick ,(string-append "pause(" (number->string count) ")"))) "PAUSE")
+							       (style "display:inline")
+							       (id ,(string-append "pause_" (mongo-dict-ref t 'starttime)))
+							       (onclick ,(string-append "pause(" (mongo-dict-ref t 'starttime) ")"))) "PAUSE")
 						      (button (
 							       (style "display:none")
-							       (id ,(string-append "unpause_" (number->string count)))
-							       (onclick ,(string-append "unpause(" (number->string count) ")" ))) "UNPAUSE")
-						   );td
-						  );tr
-						 );for/list
-				     ))
+							       (id ,(string-append "unpause_" (mongo-dict-ref t 'starttime)))
+							       (onclick ,(string-append "unpause(" (mongo-dict-ref t 'starttime) ")" ))) "UNPAUSE"))))))
                          (div ((style "min-height:430px")(id "datatable"))
 			      (div ((id "pg")) " ")
-                              (div ((id "all-tasks")))
-                              )
-                         );div
-                        );timertab
-                   (script ((type "text/javascript")) "init();")
-                   );body
-             );html
-           );response
-          );let
-        (redirect-to "")
-        );if
-    );lambda
-  );define
-
+                              (div ((id "all-tasks"))))
+			 ))
+                   (script ((type "text/javascript")) "init();")))))
+        (redirect-to ""))))
 
 (define get-msg
   (lambda (request)
@@ -403,48 +388,55 @@
 (define logon-page
   (lambda (req)
     (define msg (get-msg req))
-    
-    (response/xexpr
-     `(html
-       (head (title "Task Timer")
-             (script ((type "text/javascript")(src "jquery-1.6.4.js")) " ")
-             (link ((href "http://fonts.googleapis.com/css?family=Geostar+Fill") (rel "stylesheet") (type "text/css"))" ")
-             (script ((type "text/javascript")(src "eggtimer.js"))" "))
-       (body ((bgcolor "#4d4d4d"))
-             (div ((id "center_content")
-                   (style "margin-left:auto;margin-right:auto;width:700px;"))
-                  (div ((style "border:1px solid black;background-color:#20b2aa;align-text:center;margin-left:auto;margin-right:auto;width:700px;font-family: 'Geostar Fill',cursive;"))
-		       (table
-			(tr
-			 (td
-			  (img ((src "tasktimer.png")(width "128")(height "128"))))
-			 (td
-			  (h1 "Task Timer")))))
-                  (div ((style "border:1px solid black;background:#99CCFF;padding-top:5px;padding-left:5px;"))
-                       (div ((id "message_div") (style "color:red;")) 
-                            ,(cond
-                               ((string=? msg "notnew")
-                                "Please choose another user name.")
-                               ((string=? msg "nomatch")
-                                "Your passwords did not match.")
-                               ((string=? msg "baduser")
-                                "Login failed.")
-                               (else
-                                " ")))
-                       (form ((id "logon_form")
-                              (action "validate-user")
-                              (onsubmit "return check_login();"))
-                             ,@(formlet-display user-formlet)
-                             (br)
-                             (input ((type "submit")(name "login")(value "Login")))))
-                  (div ((style "border:1px solid black;background:#99CCFF;padding-top:5px;padding-left:5px;"))
-                       (form ((id "create_logon_form") 
-                              (action "validate-new-user")
-                              (onsubmit "return cmp_passwords();"))
-                             ,@(formlet-display new-user-formlet)
-                             (br)
-                             (input ((type "submit")(name "login")(value "Create Account")))
-                             ))))))))
+    (define cookies (request-cookies req))
+    (define id-cookie
+      (findf (lambda (c)
+               (string=? "id" (client-cookie-name c)))
+             cookies))
+    (if id-cookie 
+	(redirect-to "/timer") 
+	(begin
+	  (response/xexpr
+	   `(html
+	     (head (title "Task Timer")
+		   (script ((type "text/javascript")(src "jquery-1.6.4.js")) " ")
+		   (link ((href "http://fonts.googleapis.com/css?family=Geostar+Fill") (rel "stylesheet") (type "text/css"))" ")
+		   (script ((type "text/javascript")(src "eggtimer.js"))" "))
+	     (body ((bgcolor "#4d4d4d"))
+		   (div ((id "center_content")
+			 (style "margin-left:auto;margin-right:auto;width:700px;"))
+			(div ((style "border:1px solid black;background-color:#20b2aa;align-text:center;margin-left:auto;margin-right:auto;width:700px;font-family: 'Geostar Fill',cursive;"))
+			     (table
+			      (tr
+			       (td
+				(img ((src "tasktimer.png")(width "128")(height "128"))))
+			       (td
+				(h1 "Task Timer")))))
+			(div ((style "border:1px solid black;background:#99CCFF;padding-top:5px;padding-left:5px;"))
+			     (div ((id "message_div") (style "color:red;")) 
+				  ,(cond
+				    ((string=? msg "notnew")
+				     "Please choose another user name.")
+				    ((string=? msg "nomatch")
+				     "Your passwords did not match.")
+				    ((string=? msg "baduser")
+				     "Login failed.")
+				    (else
+				     " ")))
+			     (form ((id "logon_form")
+				    (action "validate-user")
+				    (onsubmit "return check_login();"))
+				   ,@(formlet-display user-formlet)
+				   (br)
+				   (input ((type "submit")(name "login")(value "Login")))))
+			(div ((style "border:1px solid black;background:#99CCFF;padding-top:5px;padding-left:5px;"))
+			     (form ((id "create_logon_form") 
+				    (action "validate-new-user")
+				    (onsubmit "return cmp_passwords();"))
+				   ,@(formlet-display new-user-formlet)
+				   (br)
+				   (input ((type "submit")(name "login")(value "Create Account")))
+				   ))))))))))
 
 (define save-task
   (lambda (req)
@@ -476,7 +468,7 @@
 (define (start request)
   (eggtimer-dispatch request))
 
-(define-values (eggtimer-dispatch tracker-url)
+(define-values (eggtimer-dispatch eggtimer-url)
   (dispatch-rules
    (("") logon-page)
    (("save-task") save-task)
