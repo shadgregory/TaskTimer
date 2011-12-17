@@ -103,7 +103,7 @@
               (link ((type "text/css")(rel "stylesheet")(href "fonts-min.css"))" ")
               (link ((type "text/css")(rel "stylesheet")(href "eggtimer.css")) " ")
               (link ((href "http://fonts.googleapis.com/css?family=Geostar+Fill") (rel "stylesheet") (type "text/css"))" ")
-              (script ((type "text/javascript")(src "eggtimer.js")) " ")
+              (script ((type "text/javascript")(src "tasktimer.js")) " ")
               (script ((src "yui-min.js")(charset "utf-8"))" ")
               (script ((type "text/javascript")(src "jquery-1.6.4.js")) " "))
              
@@ -401,7 +401,7 @@
 	     (head (title "Task Timer")
 		   (script ((type "text/javascript")(src "jquery-1.6.4.js")) " ")
 		   (link ((href "http://fonts.googleapis.com/css?family=Geostar+Fill") (rel "stylesheet") (type "text/css"))" ")
-		   (script ((type "text/javascript")(src "eggtimer.js"))" "))
+		   (script ((type "text/javascript")(src "tasktimer.js"))" "))
 	     (body ((bgcolor "#4d4d4d"))
 		   (div ((id "center_content")
 			 (style "margin-left:auto;margin-right:auto;width:700px;"))
