@@ -139,7 +139,7 @@ function end_task(st) {
 	url: "save-task",
 	context: document.body,
 	data: "bugnumber=" + $("#bug_num_" + st).val() +
-	    "&comment=" + $("#comment_" + st).val() +
+	    "&comment=" + encodeURIComponent($("#comment_" + st).val()) +
 	    "&category=" + encodeURIComponent($("#auto_cat" + st).val()) +
 	    "&starttime=" + $("#starttime_" + st).val() +
 	    "&endtime=" + d.getTime(),
@@ -160,13 +160,9 @@ function cancel_task(st) {
 }
 
 function init() {
-    YUI().use("datasource", 
-	      "datasource-get", 
-	      "datasource-io", 
-	      "datasource-xmlschema", 
-	      "datatable-sort", 
-	      "datatable-scroll", 
-	      "datatype-date",
+    YUI().use("yui2-datatable",
+	      "yui2-paginator",
+	      "yui2-connection",
 	      "autocomplete",
 	      "charts",
 	      "calendar",
@@ -174,94 +170,51 @@ function init() {
 	      "event-base",
 	      "tabview",
 	      "cookie",
-	      "gallery-paginator",
-	      "datatable-datasource", 
 	      function(Y){
+		  var YAHOO = Y.YUI2;
 		  var id_value = Y.Cookie.get("id");
 		  if (id_value == null) {
 		      window.location = "/";
 		  }
 		  var tabview = new Y.TabView({srcNode:'#timertab'});
 		  tabview.render();
-		  var formatDates = function (o){
-		      var dateObj = eval(o.value);
-		      return (dateObj.getMonth()+1) + "/" + dateObj.getDate() + "/" + dateObj.getFullYear();
+
+		  var dataSource = new YAHOO.util.XHRDataSource("get-tasks?");
+		  dataSource.responseType = YAHOO.util.XHRDataSource.TYPE_XML;
+		  dataSource.responseSchema = { 
+		      resultNode: "task", 
+		      fields: ["bugnumber","category","comment","hours","enddate"]
 		  };
-		  var noNullValue = function(o) {
-		      if (!o.value) return '';
-		      else return o.value;
-		  } 
-		  var cols = [
-		      {key: "Bug Number", formatter:noNullValue, sortable: true},
-		      {key: "Category", formatter:noNullValue, sortable: true},
-		      {key: "Comment", formatter:noNullValue, sortable: true},
-		      {key: "Hours", sortable: true},
-		      {key: "End", formatter: formatDates, sortable: true}
-		  ];
-		  var dataSource = new Y.DataSource.IO({
-		      source:"/get-tasks?"
-		  });
-
-		  dataSource.plug(Y.Plugin.DataSourceXMLSchema, {
-		      schema: {
-			  resultListLocator: "task",
-			  resultFields:[
-			      {key:"Bug Number", locator:"*[local-name()='bugnumber']"},
-			      {key:"Category", locator:"*[local-name()='category']"},
-			      {key:"Comment", locator:"*[local-name()='comment']"},
-			      {key:"Hours", locator:"*[local-name()='hours']"},
-			      {key:"End", locator:"*[local-name()='enddate']"}
-			  ]
+		  dataSource.connMethodPost = true; 
+		  YAHOO.widget.DataTable.formatDate = function(el, oRecord, oColumn, oData) {
+		      var milliseconds = parseInt(oData);
+		      var dateObj = new Date(milliseconds);
+		      if(dateObj instanceof Date) {
+			  el.innerHTML = (dateObj.getMonth()+1) + "/" + dateObj.getDate() + "/" + dateObj.getFullYear();
+		      } else {
+			  el.innerHTML = YAHOO.lang.isValue(oData) ? oData : '';
 		      }
-		  });
-
-		  var myCallback = {
-		      success: function(e){
-			  alert(e.response);
-		      },
-		      failure: function(e){
-			  alert("Could not retrieve data: " + e.error.message);
-		      }
-		  };
-
-		  var table = new Y.DataTable.Base({
-		      columnset: cols,
-		      summary: "Tasks",
-		      caption: ""
-		  }).plug(Y.Plugin.DataTableSort).render("#all-tasks");
-
-		  table.plug(Y.Plugin.DataTableDataSource, {
-		      datasource: dataSource,
-		      initialRequest: ""
-		  });
-		  table.plug(Y.Plugin.DataTableScroll, {
-		      width: "500px",
-		      height: "600px"
-		  });
-		  // Paginator
-		  function updatePaginator(
-		      /* object */	state) {
-		      this.setPage(state.page, true);
-		      this.setRowsPerPage(state.rowsPerPage, true);
-		      sendRequest();
 		  }
-
-		  var pg = new Y.Paginator({
-		      rowsPerPage: 20,
-		      template: '{FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink}',
-		      firstPageLinkLabel:    '|&lt;',
-		      previousPageLinkLabel: '&lt;',
-		      nextPageLinkLabel:     '&gt;',
-		      lastPageLinkLabel:     '&gt;|'
-		  });
-		  pg.on('changeRequest', updatePaginator);
-		  pg.render('#pg');
-
-		  dataSource.on('response', function(e)	{
-		      pg.setTotalRecords(e.response.meta.totalRecords, true);
-		      pg.render();
-		  });
-		  //End Paginator
+		  var cols = [
+		      {key:"bugnumber", locator:"*[local-name()='bugnumber']", sortable:true, resizeable:true, label:"Bug Number"},
+		      {key:"category",  sortable:true, 
+		       locator:"*[local-name()='category']",label:"Category"},
+		      {key:"comment", sortable:true, resizeable:true, 
+		       locator:"*[local-name()='comment']",label:"Comment"},
+		      {key:"hours", sortable:true, resizeable:true, 
+		       locator:"*[local-name()='hours']",label:"Hours"},
+		      {key:"enddate",  sortable:true, resizeable:true, 
+		       locator:"*[local-name()='enddate']",
+		       formatter:YAHOO.widget.DataTable.formatDate,
+		       label:"End Date"}
+		  ];
+		  var table = new YAHOO.widget.DataTable("all-tasks", 
+							 cols, 
+							 dataSource, 
+							 {caption:"Tasks",
+							  paginator : new YAHOO.widget.Paginator({
+							      rowsPerPage: 15
+							  })});
 
 		  var tab;
 		  Y.on('domready', function(e) {
@@ -276,10 +229,9 @@ function init() {
 		      if (e.newVal.get('label') == 'Chart')
     			  document.getElementById('chart-frame').src = 'chart.html';
 		      if (e.newVal.get('label') == 'Data') {
-		          table.datasource.load({
-			      request:""
-		          });
-		          table.render("#all-tasks");
+			  table.getDataSource().sendRequest(
+			      '/get-tasks?', 
+			      { success: table.onDataReturnInitializeTable, scope: table });
 		      }
 		  });
 	      });

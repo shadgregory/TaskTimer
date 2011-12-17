@@ -272,7 +272,7 @@
 		 (hours ,(calculate-hours (string->number (mongo-dict-ref t 'starttime))
 					  (string->number (mongo-dict-ref t 'endtime))(current-username req)))
                  (endtime ,(mongo-dict-ref t 'endtime))
-                 (enddate ,(string-append "new Date(" (mongo-dict-ref t 'endtime) ")"))
+		 (enddate ,(mongo-dict-ref t 'endtime))
                  (starttime ,(mongo-dict-ref t 'starttime))
                  (comment ,(mongo-dict-ref t 'comment))
                  (category ,(mongo-dict-ref t 'category))
