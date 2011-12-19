@@ -129,6 +129,7 @@
                                       (th ((style "min-width:100px")) "Bug Number")
                                       (th ((style "min-width:100px")) "Category")
                                       (th ((style "min-width:100px")) "Notes")
+;				      (th "Editor")
                                       (th ((colspan "3")(style "min-width:200px")) ""))
     				     ,@(for/list ((t task-match))
 						 `(tr ((id ,(string-append "task_" (mongo-dict-ref t 'starttime))))
@@ -154,8 +155,12 @@
 							   (onchange ,(string-append "update_notes(" (mongo-dict-ref t 'starttime) ")"))
 							   (value ,(doctor-comment t))
 						   )))
+;						  (td
+;						   (img ((src "text.gif")))
+;						   )
 						  (td ((colspan "3"))
-						      (button ((onclick ,(string-append "cancel_task(" (mongo-dict-ref t 'starttime) ")"))) "CANCEL")
+						      (button ((onclick ,(string-append 
+									  "cancel_task(" (mongo-dict-ref t 'starttime) ")"))) "CANCEL")
 						      (button (
 							       (id ,(string-append "end_" (mongo-dict-ref t 'starttime)))
 							       (onclick ,(string-append "end_task(" (mongo-dict-ref t 'starttime) ")"))) "END")
@@ -256,21 +261,26 @@
 		      (- total-seconds 
 			 (- endtime starttime))))
                  (real->decimal-string (/ (/ (/ total-seconds 1000) 60) 60)))))
-					  
 
 (define get-tasks
   (lambda (req)
-    (let ((task-match (mongo-dict-query
-                       "task"
-                       (make-hasheq
-                        (list (cons 'username (current-username req)))))))
+    (let* ((task-match (mongo-dict-query
+			"task"
+			(make-hasheq
+			 (list (cons 'username (current-username req))))))
+;	   (task-list (sequence->list task-match))
+;	   (task-list (sort (sequence->list task-match) 
+;			    (lambda (x y) (string<=? (mongo-dict-ref x 'endtime)
+;						     (mongo-dict-ref y 'endtime)))))
+	   )
       (response/xexpr
        `(tasks
          ,@(for/list ((t task-match) #:when (string? (mongo-dict-ref t 'endtime)))
              (let* ((enddate (seconds->date (round (/ (string->number (mongo-dict-ref t 'endtime)) 1000)))))
                `(task
 		 (hours ,(calculate-hours (string->number (mongo-dict-ref t 'starttime))
-					  (string->number (mongo-dict-ref t 'endtime))(current-username req)))
+					  (string->number (mongo-dict-ref t 'endtime))
+					  (current-username req)))
                  (endtime ,(mongo-dict-ref t 'endtime))
 		 (enddate ,(mongo-dict-ref t 'endtime))
                  (starttime ,(mongo-dict-ref t 'starttime))
@@ -285,8 +295,12 @@
     (define starttime (extract-binding/single 'starttime bindings))
     (mongo-collection-remove!
      (mongo-collection (current-mongo-db) "task")
-               (make-hasheq
-            (list (cons 'starttime starttime))))
+     (make-hasheq
+      (list (cons 'starttime starttime))))
+    (mongo-collection-remove!
+     (mongo-collection (current-mongo-db) "paused")
+     (make-hasheq
+      (list (cons 'starttime starttime))))
     (response/xexpr
      '(msg "Deleted")
        #:mime-type #"application/xml")))
@@ -304,7 +318,7 @@
       (for/list ((t (mongo-dict-query "task" (hasheq))))
         (if (string=? (task-starttime t) starttime)
             (set-task-category! t category)
-            (display "no match"))))
+            '())))
     (response/xexpr
      '(msg "Category Updated")
      #:mime-type #"application/xml")))
@@ -409,7 +423,8 @@
 			     (table
 			      (tr
 			       (td
-				(img ((src "tasktimer.png")(width "128")(height "128"))))
+				(img ((src "tasktimer.png")
+				      (width "128")(height "128"))))
 			       (td
 				(h1 "Task Timer")))))
 			(div ((style "border:1px solid black;background:#99CCFF;padding-top:5px;padding-left:5px;"))

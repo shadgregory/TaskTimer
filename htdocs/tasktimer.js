@@ -92,6 +92,7 @@ function add_task() {
 		     d.getTime() + 
 		     ")' id='comment_" + 
 		     d.getTime() + 
+//		     "'></td><td><img src='text.gif' /"+
 		     "'></td><td colspan='3'><button onclick='cancel_task(" + 
 		     d.getTime() + 
 		     ")'>CANCEL</button><button id='end_"+
@@ -163,6 +164,9 @@ function init() {
     YUI().use("yui2-datatable",
 	      "yui2-paginator",
 	      "yui2-connection",
+	      "yui2-container",
+	      "yui2-animation",
+	      "yui2-editor",
 	      "autocomplete",
 	      "charts",
 	      "calendar",
@@ -206,6 +210,7 @@ function init() {
 		      {key:"enddate",  sortable:true, resizeable:true, 
 		       locator:"*[local-name()='enddate']",
 		       formatter:YAHOO.widget.DataTable.formatDate,
+		       parser: 'date',
 		       label:"End Date"}
 		  ];
 		  var table = new YAHOO.widget.DataTable("all-tasks", 
@@ -234,5 +239,26 @@ function init() {
 			      { success: table.onDataReturnInitializeTable, scope: table });
 		      }
 		  });
+		  AlertDialog = new YAHOO.widget.SimpleDialog("dlg1", {
+		      width: "200px",
+		      effect:{effect:YAHOO.widget.ContainerEffect.FADE,duration:0.15},
+		      fixedcenter:true,
+		      modal:true,
+		      visible:false,
+		      close: true,
+		      constraintoviewport: true,
+		      buttons: [ { text:"ok", handler: function(){this.hide();}, isDefault:true }],
+		      draggable:false,
+		      effect: [
+			  { effect:YAHOO.widget.ContainerEffect.FADE,duration:0.1 }]
+		  });
+
+		  AlertDialog.setHeader("Alert");
+		  AlertDialog.render(document.body);
+		  window.alert = function(text) {
+		      AlertDialog.cfg.setProperty("text",text);
+		      AlertDialog.show();
+		  };
+
 	      });
 }
