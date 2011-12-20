@@ -16,8 +16,10 @@
 (require (planet "main.rkt" ("jaymccarthy" "mongodb.plt" 1 11)))
 (require (planet "main.ss" ("dherman" "json.plt" 3 0)))
 
-(define m (create-mongo))(define d (make-mongo-db m "eggtimer"))
+(define m (create-mongo))
+(define d (make-mongo-db m "tasktimer"))
 (current-mongo-db d)
+
 (define-mongo-struct task "task"
   ((username #:required)
    (bugnumber)
@@ -101,11 +103,11 @@
              (head
               (title ,(string-append "Task Timer - " username))
               (link ((type "text/css")(rel "stylesheet")(href "fonts-min.css"))" ")
-              (link ((type "text/css")(rel "stylesheet")(href "eggtimer.css")) " ")
+              (link ((type "text/css")(rel "stylesheet")(href "tasktimer.css")) " ")
               (link ((href "http://fonts.googleapis.com/css?family=Geostar+Fill") (rel "stylesheet") (type "text/css"))" ")
               (script ((type "text/javascript")(src "tasktimer.js")) " ")
               (script ((src "yui-min.js")(charset "utf-8"))" ")
-              (script ((type "text/javascript")(src "jquery-1.6.4.js")) " "))
+              (script ((type "text/javascript")(src "jquery-1.7.1.min.js")) " "))
              
              (body ((class "yui3-skin-sam yui-skin-sam")(bgcolor "#4d4d4d"))
                    (div ((style "border:1px solid black;background-color:#20b2aa;align-text:center;margin-left:18%;margin-right:18%;"))
@@ -264,15 +266,18 @@
 
 (define get-tasks
   (lambda (req)
-    (let* ((task-match (mongo-dict-query
-			"task"
-			(make-hasheq
-			 (list (cons 'username (current-username req))))))
-;	   (task-list (sequence->list task-match))
-;	   (task-list (sort (sequence->list task-match) 
-;			    (lambda (x y) (string<=? (mongo-dict-ref x 'endtime)
-;						     (mongo-dict-ref y 'endtime)))))
-	   )
+    (let* ((task-match 
+	    (sort
+	     (sequence->list
+	      (mongo-dict-query
+	       "task"
+	       (make-hasheq
+		(list (cons 'username (current-username req))))))
+	     (lambda (x y) 
+	       (if (and (string? (mongo-dict-ref y 'endtime))(string? (mongo-dict-ref x 'endtime)))
+		   (>  (string->number (mongo-dict-ref x 'endtime))
+		       (string->number (mongo-dict-ref y 'endtime)))
+		   #f)))))
       (response/xexpr
        `(tasks
          ,@(for/list ((t task-match) #:when (string? (mongo-dict-ref t 'endtime)))
@@ -413,7 +418,7 @@
 	  (response/xexpr
 	   `(html
 	     (head (title "Task Timer")
-		   (script ((type "text/javascript")(src "jquery-1.6.4.js")) " ")
+		   (script ((type "text/javascript")(src "jquery-1.7.1.min.js")) " ")
 		   (link ((href "http://fonts.googleapis.com/css?family=Geostar+Fill") (rel "stylesheet") (type "text/css"))" ")
 		   (script ((type "text/javascript")(src "tasktimer.js"))" "))
 	     (body ((bgcolor "#4d4d4d"))
@@ -481,9 +486,9 @@
      '(msg "Task saved."))))
 
 (define (start request)
-  (eggtimer-dispatch request))
+  (tasktimer-dispatch request))
 
-(define-values (eggtimer-dispatch eggtimer-url)
+(define-values (tasktimer-dispatch tasktimer-url)
   (dispatch-rules
    (("") logon-page)
    (("save-task") save-task)

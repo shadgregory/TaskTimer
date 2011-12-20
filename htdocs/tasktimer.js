@@ -218,7 +218,7 @@ function init() {
 							 dataSource, 
 							 {caption:"Tasks",
 							  paginator : new YAHOO.widget.Paginator({
-							      rowsPerPage: 15
+							      rowsPerPage: 16
 							  })});
 
 		  var tab;

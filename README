@@ -1,1 +1,3 @@
-Web application for tracking tasks. Racket + MongoDB.
+Web application for tracking tasks. Racket + YUI + MongoDB.
+
+Running it is as easy as 'racket main.rkt'
