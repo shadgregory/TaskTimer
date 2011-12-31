@@ -1,3 +1,4 @@
+var current_st = "";
 function cmp_passwords () {
     if ($('#new_password').val() == $('#new_password2').val()){
 	return true;
@@ -23,28 +24,42 @@ function check_login () {
 
 function update_bugnum (st) {
     $.ajax({
-    url: "update-bugnum",
-    context: document.body,
-    data: "starttime=" + $("#starttime_" + st).val() +
+	url: "update-bugnum",
+	context: document.body,
+	data: "starttime=" + $("#starttime_" + st).val() +
         "&bugnumber=" + $("#bug_num_" + st).val()
     });
 }
 
 function update_cat (st) {
     $.ajax({
-    url: "update-category",
-    context: document.body,
-    data: "starttime=" + $("#starttime_" + st).val() +
-        "&category=" + encodeURIComponent($("#auto_cat" + st).val())
+	url: "update-category",
+	context: document.body,
+	data: "starttime=" + $("#starttime_" + st).val() +
+            "&category=" + encodeURIComponent($("#auto_cat" + st).val())
     });
+}
+
+function saveComments() {
+    $("#comment_" + current_st).val(dialog.getData().ta_dialog);
+    update_notes(current_st);
+    current_st = "";
+    dialog.hide();
+}
+
+function show_dialog (st) {
+    dialog.setBody("<form name='dlgForm' method='POST'><textarea name='ta_dialog' rows='6' cols='18'>" + $("#comment_" + st).val() + "</textarea></form>");
+    current_st = st;
+    dialog.show();
+    return false;
 }
 
 function update_notes (st) {
     $.ajax({
-    url: "update-comment",
-    context: document.body,
-    data: "starttime=" + $("#starttime_" + st).val() +
-        "&comment=" + $("#comment_" + st).val()
+	url: "update-comment",
+	context: document.body,
+	data: "starttime=" + $("#starttime_" + st).val() +
+            "&comment=" + $("#comment_" + st).val()
     });
 }
 
@@ -88,11 +103,11 @@ function add_task() {
 		     d.getTime() + 
 		     ")' id='auto_cat" + 
 		     d.getTime() + 
-		     "'></td><td><input type='text' onchange='update_notes("+ 
+		     "'></td><input type='hidden' onchange='update_notes("+ 
 		     d.getTime() + 
 		     ")' id='comment_" + 
 		     d.getTime() + 
-//		     "'></td><td><img src='text.gif' /"+
+		     "'><td style='text-align:center;'><img src='Add_text_icon.png' /"+
 		     "'></td><td colspan='3'><button onclick='cancel_task(" + 
 		     d.getTime() + 
 		     ")'>CANCEL</button><button id='end_"+
@@ -130,10 +145,13 @@ function add_task() {
 
 function end_task(st) {
     var d = new Date();
-    if($("#bug_num_"+st).val() == "" &&
-       $("#comment_"+st).val() == "") {
-	alert("Either bug number or comment is required.");
-	return false;
+    if($("#bug_num_"+st).val() == "" && $("#comment_"+st).val() == "") {
+    	alert("Either bug number or comment is required.");
+    	return false;
+    }
+    if($("#auto_cat" + st).val() == "") {
+        alert("Category is required.");
+        return false;
     }
 
     $.ajax({
@@ -176,6 +194,19 @@ function init() {
 	      "cookie",
 	      function(Y){
 		  var YAHOO = Y.YUI2;
+		  dialog = new YAHOO.widget.Dialog("taskPanel", {
+		      draggable:true,
+		      fixedcenter:true
+		  });
+		  dialog.setHeader("Comments");
+		  dialog.setBody("<textarea id='ta_dialog' row='6' cols='18'></textarea>");
+		  var myButtons = [
+		      {text: "Save", handler: saveComments, isDefault: true},
+		      {text: "Cancel", handler: function() { dialog.hide();}}
+		  ];
+		  dialog.cfg.queueProperty("buttons", myButtons);
+		  dialog.render(document.body);
+		  dialog.hide();
 		  var id_value = Y.Cookie.get("id");
 		  if (id_value == null) {
 		      window.location = "/";

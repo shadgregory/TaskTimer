@@ -107,9 +107,11 @@
               (link ((href "http://fonts.googleapis.com/css?family=Geostar+Fill") (rel "stylesheet") (type "text/css"))" ")
               (script ((type "text/javascript")(src "tasktimer.js")) " ")
               (script ((src "yui-min.js")(charset "utf-8"))" ")
-              (script ((type "text/javascript")(src "jquery-1.7.1.min.js")) " "))
+              (script ((type "text/javascript")(src "jquery-1.7.1.min.js")) " ")
+
+	      )
              
-             (body ((class "yui3-skin-sam yui-skin-sam")(bgcolor "#4d4d4d"))
+             (body ((link "#000000")(alink "#000000")(vlink "#000000")(class "yui3-skin-sam yui-skin-sam")(bgcolor "darkgreen"))
                    (div ((style "border:1px solid black;background-color:#20b2aa;align-text:center;margin-left:18%;margin-right:18%;"))
 			(table
 			 (tr
@@ -130,9 +132,8 @@
                                      (tr
                                       (th ((style "min-width:100px")) "Bug Number")
                                       (th ((style "min-width:100px")) "Category")
-                                      (th ((style "min-width:100px")) "Notes")
-;				      (th "Editor")
-                                      (th ((colspan "3")(style "min-width:200px")) ""))
+                                      (th "Notes")
+                                      (th ((colspan "2")(style "min-width:200px")) ""))
     				     ,@(for/list ((t task-match))
 						 `(tr ((id ,(string-append "task_" (mongo-dict-ref t 'starttime))))
 						  (td
@@ -151,15 +152,13 @@
 							   (onchange ,(string-append "update_cat(" (mongo-dict-ref t 'starttime) ")"))
 							   (value ,(doctor-category t))
 							   )))
-						  (td
-						   (input ((type "text")
-							   (id ,(string-append "comment_" (mongo-dict-ref t 'starttime)))
-							   (onchange ,(string-append "update_notes(" (mongo-dict-ref t 'starttime) ")"))
-							   (value ,(doctor-comment t))
-						   )))
-;						  (td
-;						   (img ((src "text.gif")))
-;						   )
+						  (input ((type "hidden")
+							  (id ,(string-append "comment_" (mongo-dict-ref t 'starttime)))
+							  (onchange ,(string-append "update_notes(" (mongo-dict-ref t 'starttime) ")"))
+							  (value ,(doctor-comment t))))
+						  (td ((style "text-align:center;"))
+						      (img ((src "Add_text_icon.png")
+							    (onclick ,(string-append "show_dialog(" (mongo-dict-ref t 'starttime) ");")))))
 						  (td ((colspan "3"))
 						      (button ((onclick ,(string-append 
 									  "cancel_task(" (mongo-dict-ref t 'starttime) ")"))) "CANCEL")
@@ -421,7 +420,7 @@
 		   (script ((type "text/javascript")(src "jquery-1.7.1.min.js")) " ")
 		   (link ((href "http://fonts.googleapis.com/css?family=Geostar+Fill") (rel "stylesheet") (type "text/css"))" ")
 		   (script ((type "text/javascript")(src "tasktimer.js"))" "))
-	     (body ((bgcolor "#4d4d4d"))
+	     (body ((link "#000000")(bgcolor "darkgreen"))
 		   (div ((id "center_content")
 			 (style "margin-left:auto;margin-right:auto;width:700px;"))
 			(div ((style "border:1px solid black;background-color:#20b2aa;align-text:center;margin-left:auto;margin-right:auto;width:700px;font-family: 'Geostar Fill',cursive;"))
@@ -455,8 +454,7 @@
 				    (onsubmit "return cmp_passwords();"))
 				   ,@(formlet-display new-user-formlet)
 				   (br)
-				   (input ((type "submit")(name "login")(value "Create Account")))
-				   ))))))))))
+				   (input ((type "submit")(name "login")(value "Create Account")))))))))))))
 
 (define save-task
   (lambda (req)
