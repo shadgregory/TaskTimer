@@ -178,6 +178,20 @@ function cancel_task(st) {
     $('#task_' + st).remove();
 }
 
+function getElementsByRegExpId(p_regexp, p_element, p_tagName) {
+    p_element = p_element === undefined ? document : p_element;
+    p_tagName = p_tagName === undefined ? '*' : p_tagName;
+    var v_return = [];
+    var v_inc = 0;
+    for(var v_i = 0, v_il = p_element.getElementsByTagName(p_tagName).length; v_i < v_il; v_i++) {
+        if(p_element.getElementsByTagName(p_tagName).item(v_i).id && p_element.getElementsByTagName(p_tagName).item(v_i).id.match(p_regexp)) {
+            v_return[v_inc] = p_element.getElementsByTagName(p_tagName).item(v_i);
+            v_inc++;
+        }
+    }
+    return v_return;
+}
+
 function init() {
     YUI().use("yui2-datatable",
 	      "yui2-paginator",
@@ -186,6 +200,7 @@ function init() {
 	      "yui2-animation",
 	      "yui2-editor",
 	      "autocomplete",
+	      'autocomplete-highlighters',
 	      "charts",
 	      "calendar",
 	      "event",
@@ -194,6 +209,18 @@ function init() {
 	      "cookie",
 	      function(Y){
 		  var YAHOO = Y.YUI2;
+		  var cat_array = getElementsByRegExpId(/^auto_cat/i, document, "input");
+		  for (var i=0;i<cat_array.length;i++) {
+		      var id_string = cat_array[i].id;
+		      Y.Event.onAvailable('#' + id_string, function(e) {
+			  Y.one('#' + id_string).plug(Y.Plugin.AutoComplete, {
+			      resultHighlighter: 'phraseMatch',
+			      source: ['QA (R&D)','QA (Support)','R&D',
+				       'R&D Planning','R&D Documentation',
+				       'Lunch','IT','TEST']
+			  });
+		      });
+		  }
 		  dialog = new YAHOO.widget.Dialog("taskPanel", {
 		      draggable:true,
 		      fixedcenter:true
@@ -231,7 +258,8 @@ function init() {
 		      }
 		  }
 		  var cols = [
-		      {key:"bugnumber", locator:"*[local-name()='bugnumber']", sortable:true, resizeable:true, label:"Bug Number"},
+		      {key:"bugnumber", locator:"*[local-name()='bugnumber']", 
+		       sortable:true, resizeable:true, label:"Bug Number"},
 		      {key:"category",  sortable:true, 
 		       locator:"*[local-name()='category']",label:"Category"},
 		      {key:"comment", sortable:true, resizeable:true, 

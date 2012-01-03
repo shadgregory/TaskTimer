@@ -107,9 +107,7 @@
               (link ((href "http://fonts.googleapis.com/css?family=Geostar+Fill") (rel "stylesheet") (type "text/css"))" ")
               (script ((type "text/javascript")(src "tasktimer.js")) " ")
               (script ((src "yui-min.js")(charset "utf-8"))" ")
-              (script ((type "text/javascript")(src "jquery-1.7.1.min.js")) " ")
-
-	      )
+              (script ((type "text/javascript")(src "jquery-1.7.1.min.js")) " "))
              
              (body ((link "#000000")(alink "#000000")(vlink "#000000")(class "yui3-skin-sam yui-skin-sam")(bgcolor "darkgreen"))
                    (div ((style "border:1px solid black;background-color:#20b2aa;align-text:center;margin-left:18%;margin-right:18%;"))
