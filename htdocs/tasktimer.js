@@ -42,6 +42,7 @@ function update_cat (st) {
 
 function saveComments() {
     $("#comment_" + current_st).val(dialog.getData().ta_dialog);
+    $("#comment_img_" + current_st).title = dialog.getData().ta_dialog;
     update_notes(current_st);
     current_st = "";
     dialog.hide();
@@ -50,6 +51,7 @@ function saveComments() {
 function show_dialog (st) {
     dialog.setBody("<form name='dlgForm' method='POST'><textarea name='ta_dialog' rows='6' cols='18'>" + $("#comment_" + st).val() + "</textarea></form>");
     current_st = st;
+    dialog.render(document.body);
     dialog.show();
     return false;
 }
@@ -107,7 +109,11 @@ function add_task() {
 		     d.getTime() + 
 		     ")' id='comment_" + 
 		     d.getTime() + 
-		     "'><td style='text-align:center;'><img src='Add_text_icon.png' /"+
+		     "'><td style='text-align:center;'><img src='Add_text_icon.png' /" +
+		     "id='comment_img_'" +
+		     d.getTime() +
+		     "' onclick='show_dialog(" +
+		     d.getTime() + ")'" +
 		     "'></td><td colspan='3'><button onclick='cancel_task(" + 
 		     d.getTime() + 
 		     ")'>CANCEL</button><button id='end_"+
@@ -198,7 +204,6 @@ function init() {
 	      "yui2-connection",
 	      "yui2-container",
 	      "yui2-animation",
-	      "yui2-editor",
 	      "autocomplete",
 	      'autocomplete-highlighters',
 	      "charts",
@@ -272,13 +277,14 @@ function init() {
 		       parser: 'date',
 		       label:"End Date"}
 		  ];
-		  var table = new YAHOO.widget.DataTable("all-tasks", 
-							 cols, 
-							 dataSource, 
-							 {caption:"Tasks",
-							  paginator : new YAHOO.widget.Paginator({
-							      rowsPerPage: 16
-							  })});
+		  var table = new YAHOO.widget.DataTable(
+		      "all-tasks", 
+		      cols, 
+		      dataSource, 
+		      {caption:"Tasks",
+		       paginator : new YAHOO.widget.Paginator({
+			   rowsPerPage: 16
+		       })});
 
 		  var tab;
 		  Y.on('domready', function(e) {
@@ -318,6 +324,5 @@ function init() {
 		      AlertDialog.cfg.setProperty("text",text);
 		      AlertDialog.show();
 		  };
-
 	      });
 }

@@ -156,6 +156,8 @@
 							  (value ,(doctor-comment t))))
 						  (td ((style "text-align:center;"))
 						      (img ((src "Add_text_icon.png")
+							    (title ,(doctor-comment t))
+							    (id ,(string-append "comment_img_" (mongo-dict-ref t 'starttime)))
 							    (onclick ,(string-append "show_dialog(" (mongo-dict-ref t 'starttime) ");")))))
 						  (td ((colspan "3"))
 						      (button ((onclick ,(string-append 
