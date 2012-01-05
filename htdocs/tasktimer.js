@@ -42,7 +42,7 @@ function update_cat (st) {
 
 function saveComments() {
     $("#comment_" + current_st).val(dialog.getData().ta_dialog);
-    $("#comment_img_" + current_st).title = dialog.getData().ta_dialog;
+    $("#comment_img_" + current_st).attr("title",  dialog.getData().ta_dialog);
     update_notes(current_st);
     current_st = "";
     dialog.hide();
@@ -110,7 +110,8 @@ function add_task() {
 		     ")' id='comment_" + 
 		     d.getTime() + 
 		     "'><td style='text-align:center;'><img src='Add_text_icon.png' /" +
-		     "id='comment_img_'" +
+		     "title=''" +
+		     "id='comment_img_" +
 		     d.getTime() +
 		     "' onclick='show_dialog(" +
 		     d.getTime() + ")'" +
