@@ -1,9 +1,9 @@
 #lang racket
 
 (require web-server/servlet
+         web-server/http
          web-server/http/cookie
          web-server/http/cookie-parse
-         web-server/http
          web-server/formlets
          web-server/templates
          web-server/http/redirect
@@ -12,6 +12,7 @@
          racket/date
          file/md5
          xml
+	 "model.rkt"
          web-server/servlet-env)
 (require (planet "main.rkt" ("jaymccarthy" "mongodb.plt" 1 11)))
 (require (planet "main.ss" ("dherman" "json.plt" 3 0)))
@@ -19,26 +20,6 @@
 (define m (create-mongo))
 (define d (make-mongo-db m "tasktimer"))
 (current-mongo-db d)
-
-(define-mongo-struct task "task"
-  ((username #:required)
-   (bugnumber)
-   (category)
-   (comment)
-   (in-progress)
-   (starttime #:required)
-   (endtime)))
-
-(define-mongo-struct paused "paused"
-  ((username #:required)
-   (starttime #:required)
-   (beginpause #:required)
-   (endpause)))
-
-(define-mongo-struct
-  user "user"
-  ([username #:required]
-   [password #:required]))
 
 ;gotta do something about this
 (define doctor-bugnum
