@@ -90,15 +90,21 @@
               (script ((src "yui-min.js")(charset "utf-8"))" ")
               (script ((type "text/javascript")(src "jquery-1.7.1.min.js")) " "))
              
-             (body ((link "#000000")(alink "#000000")(vlink "#000000")(class "yui3-skin-sam yui-skin-sam")(bgcolor "darkgreen"))
-                   (div ((style "border:1px solid black;background-color:#20b2aa;align-text:center;margin-left:18%;margin-right:18%;"))
+             (body ((link "#000000")(alink "#000000")(vlink "#000000")(class "yui3-skin-sam yui-skin-sam")(bgcolor "darkgreen")
+    (style "background-image: url(gradient.png);background-repeat: repeat;"))
+		   (table ((style "margin-left:auto;margin-right:auto;"))
+		    (tr
+		     (td
+                   (div ((style "border:1px solid black;background-color:#E9C2A6;align-text:center;background-image:url(wood.png);background-repeat:repeat;"))
 			(table
 			 (tr
 			  (td (img ((src "tasktimer.png")(width "128")(height "128"))))
 			  (td
 			   (h1 ((style "font-family:'Geostar Fill',cursive;"))"Task Timer"))))
-                        (a ((href "#")(onclick "logout();")) "Logout"))
-                   (div ((id "timertab")(style "margin-left:18%;margin-right:18%;"))
+                        (a ((href "#")(onclick "logout();")) "Logout"))))
+		    (tr
+		     (td
+                   (div ((id "timertab")(style "min-width:600px;"))
                         (ul
                          (li
                           (a ((href "#tasks-list")) "Create Tasks"))
@@ -157,7 +163,7 @@
                          (div ((style "min-height:430px")(id "datatable"))
 			      (div ((id "pg")) " ")
                               (div ((id "all-tasks"))))
-			 ))
+			 )))))
                    (script ((type "text/javascript")) "init();")))))
         (redirect-to ""))))
 
@@ -401,10 +407,11 @@
 		   (script ((type "text/javascript")(src "jquery-1.7.1.min.js")) " ")
 		   (link ((href "http://fonts.googleapis.com/css?family=Geostar+Fill") (rel "stylesheet") (type "text/css"))" ")
 		   (script ((type "text/javascript")(src "tasktimer.js"))" "))
-	     (body ((link "#000000")(bgcolor "darkgreen"))
+	     (body ((link "#000000")(bgcolor "darkgreen")
+    (style "background-image: url(gradient.png);background-repeat: repeat;"))
 		   (div ((id "center_content")
 			 (style "margin-left:auto;margin-right:auto;width:700px;"))
-			(div ((style "border:1px solid black;background-color:#20b2aa;align-text:center;margin-left:auto;margin-right:auto;width:700px;font-family: 'Geostar Fill',cursive;"))
+			(div ((style "border:1px solid black;background-color:#E9C2A6;align-text:center;margin-left:auto;margin-right:auto;width:700px;font-family: 'Geostar Fill',cursive;background-image:url(wood.png);background-repeat:repeat;"))
 			     (table
 			      (tr
 			       (td
