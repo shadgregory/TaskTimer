@@ -90,8 +90,10 @@
               (script ((src "yui-min.js")(charset "utf-8"))" ")
               (script ((type "text/javascript")(src "jquery-1.7.1.min.js")) " "))
              
-             (body ((link "#000000")(alink "#000000")(vlink "#000000")(class "yui3-skin-sam yui-skin-sam")(bgcolor "darkgreen")
-    (style "background-image: url(gradient.png);background-repeat: repeat;"))
+             (body ((link "#000000")(alink "#000000")(vlink "#000000")
+                    (class "yui3-skin-sam yui-skin-sam")
+                    (bgcolor "darkgreen")
+                    (style "background-image: url(gradient.png);background-repeat: repeat;"))
 		   (table ((style "margin-left:auto;margin-right:auto;"))
 		    (tr
 		     (td
@@ -314,6 +316,24 @@
      '(msg "Category Updated")
      #:mime-type #"application/xml")))
 
+(define update-endtime
+  (lambda (req)
+    (let*
+        ((bindings (request-bindings req))
+         (starttime (extract-binding/single 'starttime bindings))
+         (hours (extract-binding/single 'hours bindings))
+         (task-match (mongo-dict-query
+                      "task"
+                      (make-hasheq
+                       (list (cons 'starttime starttime))))))
+      (for/list ((t (mongo-dict-query "task" (hasheq))))
+        (if (string=? (task-starttime t) starttime)
+            (set-task-endtime! t (number->string (+ (* (string->number hours) 3600000) (string->number starttime))))
+            '())))
+    (response/xexpr
+     '(msg "EndTime Updated")
+     #:mime-type #"application/xml")))
+
 (define update-comment
   (lambda (req)
     (let*
@@ -485,6 +505,7 @@
    (("update-bugnum") update-bugnum)
    (("update-category") update-category)
    (("update-comment") update-comment)
+   (("update-endtime") update-endtime)
    (("remove-doc") remove-doc)
    (("pause") pause)
    (("unpause") unpause)

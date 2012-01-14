@@ -14,10 +14,14 @@ function logout() {
     });
 }
 
+function timedRefresh(timeoutPeriod) {
+    setTimeout("window.location.reload(true);",timeoutPeriod);
+}
+
 function check_login () {
     if ($('#password').val() == '') {
-	$('#message_div').html("Password is required.");
-	return false;
+		$('#message_div').html("Password is required.");
+		return false;
     }
     return true;
 }
@@ -137,7 +141,11 @@ function add_task() {
 	Y.Event.onAvailable('#auto_cat' + d.getTime(), function(e) {
 	    Y.one('#auto_cat'+d.getTime()).plug(Y.Plugin.AutoComplete, {
 		resultHighlighter: 'phraseMatch',
-		source: ['QA (R&D)','QA (Support)','R&D','R&D Planning','R&D Documentation','Lunch','IT','TEST']
+		source: ['QA (R&D)','QA (Support)','R&D','R&D Planning','R&D Documentation','Lunch','IT','TEST','<Add new category>'],
+		on : {
+		    select : function(e) {
+		    }
+		}
 	    });
 	});
     });
@@ -246,12 +254,12 @@ function init() {
 		  }
 		  var tabview = new Y.TabView({srcNode:'#timertab'});
 		  tabview.render();
-
+		  
 		  var dataSource = new YAHOO.util.XHRDataSource("get-tasks?");
 		  dataSource.responseType = YAHOO.util.XHRDataSource.TYPE_XML;
 		  dataSource.responseSchema = { 
 		      resultNode: "task", 
-		      fields: ["bugnumber","category","comment","hours","enddate"]
+		      fields: ["bugnumber","category","comment","hours","starttime","enddate"]
 		  };
 		  dataSource.connMethodPost = true; 
 		  YAHOO.widget.DataTable.formatDate = function(el, oRecord, oColumn, oData) {
@@ -263,6 +271,17 @@ function init() {
 			  el.innerHTML = YAHOO.lang.isValue(oData) ? oData : '';
 		      }
 		  }
+		  var ttTextboxCellEditor = new YAHOO.widget.TextboxCellEditor({
+		      validator:YAHOO.widget.DataTable.validateNumber
+		  });
+		  ttTextboxCellEditor.subscribe("saveEvent", function(args){
+		      $.ajax({
+			  url: "update-endtime",
+			  context: document.body,
+			  data: "starttime=" + args.editor.getRecord().getData().starttime +
+			      "&hours=" + args.newData
+		      });
+		  });
 		  var cols = [
 		      {key:"bugnumber", locator:"*[local-name()='bugnumber']", 
 		       sortable:true, resizeable:true, label:"Bug Number"},
@@ -271,7 +290,9 @@ function init() {
 		      {key:"comment", sortable:true, resizeable:true, 
 		       locator:"*[local-name()='comment']",label:"Comment"},
 		      {key:"hours", sortable:true, resizeable:true, 
+		       editor: ttTextboxCellEditor,
 		       locator:"*[local-name()='hours']",label:"Hours"},
+                      {key:"starttime",locator:"[local-name()='starttime']"},
 		      {key:"enddate",  sortable:true, resizeable:true, 
 		       locator:"*[local-name()='enddate']",
 		       formatter:YAHOO.widget.DataTable.formatDate,
@@ -286,12 +307,15 @@ function init() {
 		       paginator : new YAHOO.widget.Paginator({
 			   rowsPerPage: 16
 		       })});
+		  table.subscribe("cellClickEvent", table.onEventShowCellEditor);
+                  table.hideColumn(table.getColumn(4));
 
 		  var tab;
 		  Y.on('domready', function(e) {
 		      tab = new Y.Tab({
 			  label: "Chart",
-			  content: '<center><iframe scrolling="no" src="chart.html" height="430" width="430" id="chart-frame"></iframe></center>'
+			  content: 
+			  '<center><iframe scrolling="no" height="430" width="430" id="chart-frame"></iframe></center>'
 		      });
 		      tabview.add(tab);
 		      tabview.render();
