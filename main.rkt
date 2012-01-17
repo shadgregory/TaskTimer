@@ -73,6 +73,7 @@
 			 (list (cons 'username (current-username req))
 			       (cons 'in-progress 1)))))
     (define cookies (request-cookies req))
+    (date-display-format 'iso-8601)
     (define id-cookie
       (findf (lambda (c)
                (string=? "id" (client-cookie-name c)))
@@ -120,6 +121,7 @@
                                       (th ((style "min-width:100px")) "Bug Number")
                                       (th ((style "min-width:100px")) "Category")
                                       (th "Notes")
+				      (th "Start Time")
                                       (th ((colspan "2")(style "min-width:200px")) ""))
     				     ,@(for/list ((t task-match))
 						 `(tr ((id ,(string-append "task_" (mongo-dict-ref t 'starttime))))
@@ -148,6 +150,9 @@
 							    (title ,(doctor-comment t))
 							    (id ,(string-append "comment_img_" (mongo-dict-ref t 'starttime)))
 							    (onclick ,(string-append "show_dialog(" (mongo-dict-ref t 'starttime) ");")))))
+						  (td ((style "text-align:center;"))
+						      ,(date->string (seconds->date(/ (string->number (mongo-dict-ref t 'starttime)) 1000)) #t)
+						      )
 						  (td ((colspan "3"))
 						      (button ((onclick ,(string-append 
 									  "cancel_task(" (mongo-dict-ref t 'starttime) ")"))) "CANCEL")
@@ -328,7 +333,10 @@
                        (list (cons 'starttime starttime))))))
       (for/list ((t (mongo-dict-query "task" (hasheq))))
         (if (string=? (task-starttime t) starttime)
-            (set-task-endtime! t (number->string (+ (* (string->number hours) 3600000) (string->number starttime))))
+            (set-task-endtime! t 
+			       (number->string 
+				(+ (* (string->number hours) 3600000) 
+				   (string->number starttime))))
             '())))
     (response/xexpr
      '(msg "EndTime Updated")

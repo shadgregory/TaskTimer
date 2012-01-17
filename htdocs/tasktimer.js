@@ -95,6 +95,22 @@ function unpause(st) {
 
 function add_task() {
     var d = new Date();
+    var month = d.getMonth() + 1;
+    var year = d.getFullYear();
+    var day = d.getDate();
+    var hour = d.getHours();
+    var min = d.getMinutes();
+    var sec = d.getSeconds();
+    if (month < 10)
+	month = "0" + month;
+    if (day < 10)
+	day = "0" + day;
+    if (min < 10)
+	min = "0" + min;
+    if (sec < 10)
+	sec = "0" + sec;
+    if (hour < 10)
+	hour = "0" + hour;
     var task_row = $("<tr id='task_" + 
 		     d.getTime() + 
 		     "'><td><input type='hidden' value='" + 
@@ -119,7 +135,10 @@ function add_task() {
 		     d.getTime() +
 		     "' onclick='show_dialog(" +
 		     d.getTime() + ")'" +
-		     "'></td><td colspan='3'><button onclick='cancel_task(" + 
+		     "'></td><td style='text-align:center;'>" + 
+		     year + "-" + month + "-" + day + " " + hour + ":" + min + ":" + sec +
+		     "</td>" + 
+		     "<td colspan='3'><button onclick='cancel_task(" + 
 		     d.getTime() + 
 		     ")'>CANCEL</button><button id='end_"+
 		     d.getTime() +
