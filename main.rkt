@@ -46,7 +46,7 @@
     (make-paused
      #:username (current-username req)
      #:starttime (extract-binding/single 'starttime bindings)
-     #:beginpause (round (current-inexact-milliseconds)))
+     #:beginpause (string->number (extract-binding/single 'begin_paused bindings)))
      (response/xexpr
       '(msg "Paused")
       #:mime-type #"application/xml")))
@@ -58,12 +58,33 @@
 			  "paused"
 			  (make-hasheq
 			   (list (cons 'username (current-username req))
+				 (cons 'beginpause (string->number (extract-binding/single 'begin_paused bindings)))
 				 (cons 'starttime (extract-binding/single 'starttime bindings))))))
     (for/list ((p paused-match))
 	      (set-paused-endpause! p (round (current-inexact-milliseconds))))
     (response/xexpr
      '(msg "Unpaused")
     #:mime-type #"application/xml")))
+
+(define get-paused-time
+  (lambda (req)
+    (define bindings (request-bindings req))
+    (define total-time 0)
+    (define paused-match (mongo-dict-query
+			  "paused"
+			  (make-hasheq
+			   (list (cons 'username (current-username req))
+				 (cons 'starttime (extract-binding/single 'starttime bindings))))))
+    (for/list ((p paused-match))
+	      (cond
+	       ((bson-null? (mongo-dict-ref p 'endpause)) '())
+	       (else
+		(set! total-time (+ total-time (- 
+				(mongo-dict-ref p 'endpause)
+				(mongo-dict-ref p 'beginpause)))))))
+    (response/xexpr
+     `(paused_time
+       ,(number->string total-time)))))
 
 (define timer-page
   (lambda (req)
@@ -121,8 +142,10 @@
                                       (th ((style "min-width:100px")) "Bug Number")
                                       (th ((style "min-width:100px")) "Category")
                                       (th "Notes")
-				      (th "Start Time")
-                                      (th ((colspan "2")(style "min-width:200px")) ""))
+;				      (th "Start Time")
+                                      (th ((colspan "2")(style "min-width:200px")) "")
+				      (th)
+				      )
     				     ,@(for/list ((t task-match))
 						 `(tr ((id ,(string-append "task_" (mongo-dict-ref t 'starttime))))
 						  (td
@@ -150,9 +173,6 @@
 							    (title ,(doctor-comment t))
 							    (id ,(string-append "comment_img_" (mongo-dict-ref t 'starttime)))
 							    (onclick ,(string-append "show_dialog(" (mongo-dict-ref t 'starttime) ");")))))
-						  (td ((style "text-align:center;"))
-						      ,(date->string (seconds->date(/ (string->number (mongo-dict-ref t 'starttime)) 1000)) #t)
-						      )
 						  (td ((colspan "3"))
 						      (button ((onclick ,(string-append 
 									  "cancel_task(" (mongo-dict-ref t 'starttime) ")"))) "CANCEL")
@@ -160,13 +180,42 @@
 							       (id ,(string-append "end_" (mongo-dict-ref t 'starttime)))
 							       (onclick ,(string-append "end_task(" (mongo-dict-ref t 'starttime) ")"))) "END")
 						      (button (
-							       (style "display:inline")
+				       		       (style "display:inline")
 							       (id ,(string-append "pause_" (mongo-dict-ref t 'starttime)))
 							       (onclick ,(string-append "pause(" (mongo-dict-ref t 'starttime) ")"))) "PAUSE")
 						      (button (
 							       (style "display:none")
 							       (id ,(string-append "unpause_" (mongo-dict-ref t 'starttime)))
-							       (onclick ,(string-append "unpause(" (mongo-dict-ref t 'starttime) ")" ))) "UNPAUSE"))))))
+							       (onclick ,(string-append "unpause(" (mongo-dict-ref t 'starttime) ")" ))) "UNPAUSE"))
+						  (td (div ((style "font-weight:bold")(id ,(string-append "timer_" (mongo-dict-ref t 'starttime)))) " "))
+						  (script ((type "text/javascript"))
+							  ,(string-append "var interval_id = setInterval(\"update_timer('"
+									  (mongo-dict-ref t 'starttime) 
+									  "')\", 1000);"
+									  "timer_hash["
+									  (mongo-dict-ref t 'starttime)
+									  "] = interval_id;"
+									  "paused_hash["
+									  (mongo-dict-ref t 'starttime)
+									  "] = 0;"
+									  "$.ajax({"
+									  "url: 'get-paused-time',"
+									  "data: 'starttime=' + "
+									  (mongo-dict-ref t 'starttime)
+									  ","
+									  "context:document.body,"
+									  "dataType: 'xml',"
+									  "success: function(data) {"
+									  "var xml = data;"
+									  "$(xml).find('paused_time').each(function(){"
+									  "paused_hash["
+									  (mongo-dict-ref t 'starttime)
+									  "] = $(this).text();"
+									  "});"
+									  "}"
+									  "});"
+									  )))
+						 )))
                          (div ((style "min-height:430px")(id "datatable"))
 			      (div ((id "pg")) " ")
                               (div ((id "all-tasks"))))
@@ -485,17 +534,16 @@
                       "task"
                       (make-hasheq
                        (list (cons 'starttime starttime))))))
-      
       (for/list ((t (mongo-dict-query "task" (hasheq))))
-        (if (string=? (task-starttime t) starttime)
-            (begin
-              (set-task-bugnumber! t bugnumber)
-              (set-task-endtime! t endtime)
-              (set-task-category! t category)
-              (set-task-comment! t comment)
-              (set-task-in-progress! t 0)
-              (set-task-username! t (current-username req)))
-            '())))
+		(if (equal? (task-starttime t) starttime)
+		    (begin
+		      (set-task-bugnumber! t bugnumber)
+		      (set-task-endtime! t endtime)
+		      (set-task-category! t category)
+		      (set-task-comment! t comment)
+		      (set-task-in-progress! t 0)
+		      (set-task-username! t (current-username req)))
+		    '())))
     (response/xexpr
      '(msg "Task saved."))))
 
@@ -508,6 +556,7 @@
    (("save-task") save-task)
    (("create-task") create-task)
    (("get-tasks") get-tasks)
+   (("get-paused-time") get-paused-time)
    (("validate-new-user") validate-new-user)
    (("validate-user") validate-user)
    (("update-bugnum") update-bugnum)

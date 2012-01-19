@@ -1,4 +1,7 @@
 var current_st = "";
+var timer_hash = new Object();
+var paused_hash = new Object();
+var begin_paused_hash = new Object();
 function cmp_passwords () {
     if ($('#new_password').val() == $('#new_password2').val()){
 	return true;
@@ -53,7 +56,8 @@ function saveComments() {
 }
 
 function show_dialog (st) {
-    dialog.setBody("<form name='dlgForm' method='POST'><textarea name='ta_dialog' rows='6' cols='18'>" + $("#comment_" + st).val() + "</textarea></form>");
+    dialog.setBody("<form name='dlgForm' method='POST'><textarea name='ta_dialog' rows='6' cols='18'>" + 
+		   $("#comment_" + st).val() + "</textarea></form>");
     current_st = st;
     dialog.render(document.body);
     dialog.show();
@@ -68,29 +72,60 @@ function update_notes (st) {
             "&comment=" + $("#comment_" + st).val()
     });
 }
+function update_timer(st){
+    var d = new Date();
+    var diff = Math.floor((d.getTime() - st - paused_hash[st]) / 1000);
+    var hours = Math.floor(diff / 3600);
+    var min = Math.floor((diff - (hours * 3600)) / 60);
+    var sec = Math.floor(diff - (hours * 3600) - (min * 60));
+    if (sec < 10)
+	sec = "0" + sec;
+    if (min < 10)
+	min = "0" + min;
+    if (hours < 10)
+	hours = "0" + hours;
+    $('#timer_'+st).text(hours + ":" + min + ":" + sec);
+}
 
 function pause(st) {
+    var d = new Date();
     $.ajax({
 	url: "pause",
-	data: "starttime=" + st,
+	data: "starttime=" + st +"&begin_paused=" + d.getTime(),
 	context:document.body,
 	success: function() {
 	    $("#pause_" + st).hide();
 	    $("#unpause_" + st).show();
+	    begin_paused_hash[st] = d.getTime();
 	}
     });
+    clearInterval(timer_hash[st]);
 }
 
 function unpause(st) {
     $.ajax({
 	url: "unpause",
-	data: "starttime=" + st,
+	data: "starttime=" + st + "&begin_paused=" + begin_paused_hash[st],
 	context:document.body,
 	success: function() {
 	    $("#pause_" + st).show();
 	    $("#unpause_" + st).hide();
 	}
     });
+    $.ajax({
+	url: "get-paused-time",
+	data: "starttime=" + st,
+	dataType: 'xml',
+	context:document.body,
+	success: function(data) {
+	    var xml = data;
+	    $(xml).find("paused_time").each(function(){
+		paused_hash[st] = $(this).text();
+	    });
+	}
+    });
+    var interval_id = setInterval("update_timer("+st+")",1000);
+    timer_hash[st] = interval_id;
 }
 
 function add_task() {
@@ -135,9 +170,12 @@ function add_task() {
 		     d.getTime() +
 		     "' onclick='show_dialog(" +
 		     d.getTime() + ")'" +
-		     "'></td><td style='text-align:center;'>" + 
+		     "'></td>"+
+		     /*
+		     "<td style='text-align:center;'>" + 
 		     year + "-" + month + "-" + day + " " + hour + ":" + min + ":" + sec +
 		     "</td>" + 
+		     */
 		     "<td colspan='3'><button onclick='cancel_task(" + 
 		     d.getTime() + 
 		     ")'>CANCEL</button><button id='end_"+
@@ -152,7 +190,26 @@ function add_task() {
 		     d.getTime() +
 		     "' onclick='unpause(" +
 		     d.getTime() +
-		     ")'>UNPAUSE</button></td></tr>");
+		     ")'>UNPAUSE</button></td><td><div style='font-weight:bold;' id='timer_"+
+		     d.getTime()+"'>00:00:00</div></td></tr>");
+    var interval_id = setInterval("update_timer("+d.getTime()+")",1000);
+    timer_hash[d.getTime()] = interval_id;
+    paused_hash[d.getTime()] = 0;
+    $.ajax({
+	url: "get-paused-time",
+	data: "starttime=" + d.getTime(),
+	context:document.body,
+	dataType: 'xml',
+	success: function(data) {
+	    var xml = data;
+	    $(xml).find("paused_time").each(function(){
+		paused_hash[d.getTime()] = $(this).text();
+	    });
+	},
+	failure: function(data) {
+	    alert("failure");
+	}
+    });
 
     $("#tasks-table tr:last").after(task_row);
 
@@ -197,7 +254,6 @@ function end_task(st) {
 	    "&starttime=" + $("#starttime_" + st).val() +
 	    "&endtime=" + d.getTime(),
 	success: function() {
-	    alert("task saved");
 	    $('#task_' + st).remove();
 	}
     });
@@ -210,6 +266,7 @@ function cancel_task(st) {
 	data: "starttime=" +
             $("#starttime_" +st).val()});
     $('#task_' + st).remove();
+    clearInterval(timer_hash[st]);
 }
 
 function getElementsByRegExpId(p_regexp, p_element, p_tagName) {
