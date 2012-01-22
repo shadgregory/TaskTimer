@@ -12,7 +12,7 @@
          racket/date
          file/md5
          xml
-	 "model.rkt"
+         "model.rkt"
          web-server/servlet-env)
 (require (planet "main.rkt" ("jaymccarthy" "mongodb.plt" 1 11)))
 (require (planet "main.ss" ("dherman" "json.plt" 3 0)))
@@ -25,20 +25,20 @@
 (define doctor-bugnum
   (lambda (t)
     (if (string? (mongo-dict-ref t 'bugnumber))
-	(mongo-dict-ref t 'bugnumber)
-	"")))
+        (mongo-dict-ref t 'bugnumber)
+        "")))
 
 (define doctor-category
   (lambda (t)
     (if (string? (mongo-dict-ref t 'category))
-	(mongo-dict-ref t 'category)
-	"")))
+        (mongo-dict-ref t 'category)
+        "")))
 
 (define doctor-comment
   (lambda (t)
     (if (string? (mongo-dict-ref t 'comment))
-	(mongo-dict-ref t 'comment)
-	"")))
+        (mongo-dict-ref t 'comment)
+        "")))
 
 (define pause
   (lambda (req)
@@ -47,41 +47,41 @@
      #:username (current-username req)
      #:starttime (extract-binding/single 'starttime bindings)
      #:beginpause (string->number (extract-binding/single 'begin_paused bindings)))
-     (response/xexpr
-      '(msg "Paused")
-      #:mime-type #"application/xml")))
+    (response/xexpr
+     '(msg "Paused")
+     #:mime-type #"application/xml")))
 
 (define unpause
   (lambda (req)
     (define bindings (request-bindings req))
     (define paused-match (mongo-dict-query
-			  "paused"
-			  (make-hasheq
-			   (list (cons 'username (current-username req))
-				 (cons 'beginpause (string->number (extract-binding/single 'begin_paused bindings)))
-				 (cons 'starttime (extract-binding/single 'starttime bindings))))))
+                          "paused"
+                          (make-hasheq
+                           (list (cons 'username (current-username req))
+                                 (cons 'beginpause (string->number (extract-binding/single 'begin_paused bindings)))
+                                 (cons 'starttime (extract-binding/single 'starttime bindings))))))
     (for/list ((p paused-match))
-	      (set-paused-endpause! p (round (current-inexact-milliseconds))))
+      (set-paused-endpause! p (round (current-inexact-milliseconds))))
     (response/xexpr
      '(msg "Unpaused")
-    #:mime-type #"application/xml")))
+     #:mime-type #"application/xml")))
 
 (define get-paused-time
   (lambda (req)
     (define bindings (request-bindings req))
     (define total-time 0)
     (define paused-match (mongo-dict-query
-			  "paused"
-			  (make-hasheq
-			   (list (cons 'username (current-username req))
-				 (cons 'starttime (extract-binding/single 'starttime bindings))))))
+                          "paused"
+                          (make-hasheq
+                           (list (cons 'username (current-username req))
+                                 (cons 'starttime (extract-binding/single 'starttime bindings))))))
     (for/list ((p paused-match))
-	      (cond
-	       ((bson-null? (mongo-dict-ref p 'endpause)) '())
-	       (else
-		(set! total-time (+ total-time (- 
-				(mongo-dict-ref p 'endpause)
-				(mongo-dict-ref p 'beginpause)))))))
+      (cond
+        ((bson-null? (mongo-dict-ref p 'endpause)) '())
+        (else
+         (set! total-time (+ total-time (- 
+                                         (mongo-dict-ref p 'endpause)
+                                         (mongo-dict-ref p 'beginpause)))))))
     (response/xexpr
      `(paused_time
        ,(number->string total-time)))))
@@ -89,10 +89,10 @@
 (define timer-page
   (lambda (req)
     (define task-match (mongo-dict-query
-			"task"
-			(make-hasheq
-			 (list (cons 'username (current-username req))
-			       (cons 'in-progress 1)))))
+                        "task"
+                        (make-hasheq
+                         (list (cons 'username (current-username req))
+                               (cons 'in-progress 1)))))
     (define cookies (request-cookies req))
     (date-display-format 'iso-8601)
     (define id-cookie
@@ -113,113 +113,118 @@
               (script ((type "text/javascript")(src "jquery-1.7.1.min.js")) " "))
              
              (body ((link "#000000")(alink "#000000")(vlink "#000000")
-                    (class "yui3-skin-sam yui-skin-sam")
-                    (bgcolor "darkgreen")
-                    (style "background-image: url(gradient.png);background-repeat: repeat;"))
-		   (table ((style "margin-left:auto;margin-right:auto;"))
-		    (tr
-		     (td
-                   (div ((style "border:1px solid black;background-color:#E9C2A6;align-text:center;background-image:url(wood.png);background-repeat:repeat;"))
-			(table
-			 (tr
-			  (td (img ((src "tasktimer.png")(width "128")(height "128"))))
-			  (td
-			   (h1 ((style "font-family:'Geostar Fill',cursive;"))"Task Timer"))))
-                        (a ((href "#")(onclick "logout();")) "Logout"))))
-		    (tr
-		     (td
-                   (div ((id "timertab")(style "min-width:600px;"))
-                        (ul
-                         (li
-                          (a ((href "#tasks-list")) "Create Tasks"))
-                         (li
-                          (a ((href "#datatable")) "Data")))
-                        (div
-                         (div ((id "tasks-list")(style "min-height:430px;padding: 5px"))
-                              (a ((href "#")(onclick "add_task()")) "Add Task")
-                              (table ((id "tasks-table"))
-                                     (tr
-                                      (th ((style "min-width:100px")) "Bug Number")
-                                      (th ((style "min-width:100px")) "Category")
-                                      (th "Notes")
-;				      (th "Start Time")
-                                      (th ((colspan "2")(style "min-width:200px")) "")
-				      (th)
-				      )
-    				     ,@(for/list ((t task-match))
-						 `(tr ((id ,(string-append "task_" (mongo-dict-ref t 'starttime))))
-						  (td
-						   (input 
-						    ((id ,(string-append "starttime_" (mongo-dict-ref t 'starttime)))
-						     (value ,(mongo-dict-ref t 'starttime))
-						     (type "hidden")))
-						   (input ((type "text")
-							   (onchange ,(string-append "update_bugnum(" (mongo-dict-ref t 'starttime) ")"))
-							   (id ,(string-append "bug_num_" (mongo-dict-ref t 'starttime)))
-							   (value ,(doctor-bugnum t))
-							   )))
-						  (td
-						   (input ((type "text")
-							   (id ,(string-append "auto_cat" (mongo-dict-ref t 'starttime)))
-							   (onchange ,(string-append "update_cat(" (mongo-dict-ref t 'starttime) ")"))
-							   (value ,(doctor-category t))
-							   )))
-						  (input ((type "hidden")
-							  (id ,(string-append "comment_" (mongo-dict-ref t 'starttime)))
-							  (onchange ,(string-append "update_notes(" (mongo-dict-ref t 'starttime) ")"))
-							  (value ,(doctor-comment t))))
-						  (td ((style "text-align:center;"))
-						      (img ((src "Add_text_icon.png")
-							    (title ,(doctor-comment t))
-							    (id ,(string-append "comment_img_" (mongo-dict-ref t 'starttime)))
-							    (onclick ,(string-append "show_dialog(" (mongo-dict-ref t 'starttime) ");")))))
-						  (td ((colspan "3"))
-						      (button ((onclick ,(string-append 
-									  "cancel_task(" (mongo-dict-ref t 'starttime) ")"))) "CANCEL")
-						      (button (
-							       (id ,(string-append "end_" (mongo-dict-ref t 'starttime)))
-							       (onclick ,(string-append "end_task(" (mongo-dict-ref t 'starttime) ")"))) "END")
-						      (button (
-				       		       (style "display:inline")
-							       (id ,(string-append "pause_" (mongo-dict-ref t 'starttime)))
-							       (onclick ,(string-append "pause(" (mongo-dict-ref t 'starttime) ")"))) "PAUSE")
-						      (button (
-							       (style "display:none")
-							       (id ,(string-append "unpause_" (mongo-dict-ref t 'starttime)))
-							       (onclick ,(string-append "unpause(" (mongo-dict-ref t 'starttime) ")" ))) "UNPAUSE"))
-						  (td (div ((style "font-weight:bold")(id ,(string-append "timer_" (mongo-dict-ref t 'starttime)))) " "))
-						  (script ((type "text/javascript"))
-							  ,(string-append "var interval_id = setInterval(\"update_timer('"
-									  (mongo-dict-ref t 'starttime) 
-									  "')\", 1000);"
-									  "timer_hash["
-									  (mongo-dict-ref t 'starttime)
-									  "] = interval_id;"
-									  "paused_hash["
-									  (mongo-dict-ref t 'starttime)
-									  "] = 0;"
-									  "$.ajax({"
-									  "url: 'get-paused-time',"
-									  "data: 'starttime=' + "
-									  (mongo-dict-ref t 'starttime)
-									  ","
-									  "context:document.body,"
-									  "dataType: 'xml',"
-									  "success: function(data) {"
-									  "var xml = data;"
-									  "$(xml).find('paused_time').each(function(){"
-									  "paused_hash["
-									  (mongo-dict-ref t 'starttime)
-									  "] = $(this).text();"
-									  "});"
-									  "}"
-									  "});"
-									  )))
-						 )))
-                         (div ((style "min-height:430px")(id "datatable"))
-			      (div ((id "pg")) " ")
-                              (div ((id "all-tasks"))))
-			 )))))
+                                    (class "yui3-skin-sam yui-skin-sam")
+                                    (bgcolor "darkgreen")
+                                    (style "background-image: url(gradient.png);background-repeat: repeat;"))
+                   (table ((style "margin-left:auto;margin-right:auto;"))
+                          (tr
+                           (td
+                            (div ((style "border:1px solid black;background-color:#E9C2A6;align-text:center;background-image:url(wood.png);background-repeat:repeat;"))
+                                 (table
+                                  (tr
+                                   (td (img ((src "tasktimer.png")(width "128")(height "128"))))
+                                   (td
+                                    (h1 ((style "font-family:'Geostar Fill',cursive;"))"Task Timer"))))
+                                 (a ((href "#")(onclick "logout();")) "Logout"))))
+                          (tr
+                           (td
+                            (div ((id "timertab")(style "min-width:600px;"))
+                                 (ul
+                                  (li
+                                   (a ((href "#tasks-list")) "Create Tasks"))
+                                  (li
+                                   (a ((href "#datatable")) "Data")))
+                                 (div
+                                  (div ((id "tasks-list")(style "min-height:430px;padding: 5px"))
+                                       (a ((href "#")(onclick "add_task()")) "Add Task")
+                                       (table ((id "tasks-table"))
+                                              (tr
+                                               (th)
+                                               (th ((style "min-width:100px")) "Bug Number")
+                                               (th ((style "min-width:100px")) "Category")
+                                               (th "Notes")
+                                               (th ((colspan "2")(style "min-width:150px")) "")
+                                               (th)
+                                               )
+                                              ,@(for/list ((t task-match))
+                                                  `(tr ((id ,(string-append "task_" (mongo-dict-ref t 'starttime))))
+                                                       (td
+                                                        (img (
+                                                              (src "pause.png")
+                                                              (height "9")
+                                                              (style "display:inline;width:25px;height:25px;vertical-align:text-bottom;")
+                                                              (id ,(string-append "pause_" (mongo-dict-ref t 'starttime)))
+                                                              (onclick ,(string-append "pause(" (mongo-dict-ref t 'starttime) ")"))) " ")
+                                                        (img (
+                                                              (src "play.png")
+                                                              (style "display:none;width:25px;height:25px;vertical-align:text-bottom;")
+                                                              (id ,(string-append "unpause_" (mongo-dict-ref t 'starttime)))
+                                                              (onclick ,(string-append "unpause(" (mongo-dict-ref t 'starttime) ")" ))) " "))
+                                                       (td
+                                                        (input 
+                                                         ((id ,(string-append "starttime_" (mongo-dict-ref t 'starttime)))
+                                                          (value ,(mongo-dict-ref t 'starttime))
+                                                          (type "hidden")))
+                                                        (input ((type "text")
+                                                                (onchange ,(string-append "update_bugnum(" (mongo-dict-ref t 'starttime) ")"))
+                                                                (id ,(string-append "bug_num_" (mongo-dict-ref t 'starttime)))
+                                                                (value ,(doctor-bugnum t))
+                                                                )))
+                                                       (td
+                                                        (input ((type "text")
+                                                                (id ,(string-append "auto_cat" (mongo-dict-ref t 'starttime)))
+                                                                (onchange ,(string-append "update_cat(" (mongo-dict-ref t 'starttime) ")"))
+                                                                (value ,(doctor-category t))
+                                                                )))
+                                                       (input ((type "hidden")
+                                                               (id ,(string-append "comment_" (mongo-dict-ref t 'starttime)))
+                                                               (onchange ,(string-append "update_notes(" (mongo-dict-ref t 'starttime) ")"))
+                                                               (value ,(doctor-comment t))))
+                                                       (td ((style "text-align:center;"))
+                                                           (img ((src "Add_text_icon.png")
+                                                                 (title ,(doctor-comment t))
+                                                                 (id ,(string-append "comment_img_" (mongo-dict-ref t 'starttime)))
+                                                                 (onclick ,(string-append "show_dialog(" (mongo-dict-ref t 'starttime) ");")))))
+                                                       (td ((colspan "2"))
+                                                           (button ((onclick ,(string-append 
+                                                                               "cancel_task(" (mongo-dict-ref t 'starttime) ")"))) "CANCEL")
+                                                           (button (
+                                                                    (id ,(string-append "end_" (mongo-dict-ref t 'starttime)))
+                                                                    (onclick ,(string-append "end_task(" (mongo-dict-ref t 'starttime) ")"))) "END")
+                                                           
+                                                           (td (div ((style "font-weight:bold")(id ,(string-append "timer_" (mongo-dict-ref t 'starttime)))) " ")))
+                                                       (script ((type "text/javascript"))
+                                                               ,(string-append "var interval_id = setInterval(\"update_timer('"
+                                                                               (mongo-dict-ref t 'starttime) 
+                                                                               "')\", 1000);"
+                                                                               "timer_hash["
+                                                                               (mongo-dict-ref t 'starttime)
+                                                                               "] = interval_id;"
+                                                                               "paused_hash["
+                                                                               (mongo-dict-ref t 'starttime)
+                                                                               "] = 0;"
+                                                                               "$.ajax({"
+                                                                               "url: 'get-paused-time',"
+                                                                               "data: 'starttime=' + "
+                                                                               (mongo-dict-ref t 'starttime)
+                                                                               ","
+                                                                               "context:document.body,"
+                                                                               "dataType: 'xml',"
+                                                                               "success: function(data) {"
+                                                                               "var xml = data;"
+                                                                               "$(xml).find('paused_time').each(function(){"
+                                                                               "paused_hash["
+                                                                               (mongo-dict-ref t 'starttime)
+                                                                               "] = $(this).text();"
+                                                                               "});"
+                                                                               "}"
+                                                                               "});"
+                                                                               )))
+                                                  )))
+                                  (div ((style "min-height:430px")(id "datatable"))
+                                       (div ((id "pg")) " ")
+                                       (div ((id "all-tasks"))))
+                                  )))))
                    (script ((type "text/javascript")) "init();")))))
         (redirect-to ""))))
 
@@ -295,41 +300,41 @@
 (define calculate-hours
   (lambda (starttime endtime username)
     (let ((total-seconds (- endtime starttime))
-	  (paused-match (mongo-dict-query 
-			 "paused"
-			 (make-hasheq
-			  (list (cons 'username username)
-				(cons 'starttime starttime))))))
+          (paused-match (mongo-dict-query 
+                         "paused"
+                         (make-hasheq
+                          (list (cons 'username username)
+                                (cons 'starttime starttime))))))
       (for/list ((p paused-match) #:when (mongo-dict-ref p 'endpause))
-		(set! total-seconds 
-		      (- total-seconds 
-			 (- endtime starttime))))
-                 (real->decimal-string (/ (/ (/ total-seconds 1000) 60) 60)))))
+        (set! total-seconds 
+              (- total-seconds 
+                 (- endtime starttime))))
+      (real->decimal-string (/ (/ (/ total-seconds 1000) 60) 60)))))
 
 (define get-tasks
   (lambda (req)
     (let* ((task-match 
-	    (sort
-	     (sequence->list
-	      (mongo-dict-query
-	       "task"
-	       (make-hasheq
-		(list (cons 'username (current-username req))))))
-	     (lambda (x y) 
-	       (if (and (string? (mongo-dict-ref y 'endtime))(string? (mongo-dict-ref x 'endtime)))
-		   (>  (string->number (mongo-dict-ref x 'endtime))
-		       (string->number (mongo-dict-ref y 'endtime)))
-		   #f)))))
+            (sort
+             (sequence->list
+              (mongo-dict-query
+               "task"
+               (make-hasheq
+                (list (cons 'username (current-username req))))))
+             (lambda (x y) 
+               (if (and (string? (mongo-dict-ref y 'endtime))(string? (mongo-dict-ref x 'endtime)))
+                   (>  (string->number (mongo-dict-ref x 'endtime))
+                       (string->number (mongo-dict-ref y 'endtime)))
+                   #f)))))
       (response/xexpr
        `(tasks
          ,@(for/list ((t task-match) #:when (string? (mongo-dict-ref t 'endtime)))
              (let* ((enddate (seconds->date (round (/ (string->number (mongo-dict-ref t 'endtime)) 1000)))))
                `(task
-		 (hours ,(calculate-hours (string->number (mongo-dict-ref t 'starttime))
-					  (string->number (mongo-dict-ref t 'endtime))
-					  (current-username req)))
+                 (hours ,(calculate-hours (string->number (mongo-dict-ref t 'starttime))
+                                          (string->number (mongo-dict-ref t 'endtime))
+                                          (current-username req)))
                  (endtime ,(mongo-dict-ref t 'endtime))
-		 (enddate ,(mongo-dict-ref t 'endtime))
+                 (enddate ,(mongo-dict-ref t 'endtime))
                  (starttime ,(mongo-dict-ref t 'starttime))
                  (comment ,(mongo-dict-ref t 'comment))
                  (category ,(mongo-dict-ref t 'category))
@@ -350,7 +355,7 @@
       (list (cons 'starttime starttime))))
     (response/xexpr
      '(msg "Deleted")
-       #:mime-type #"application/xml")))
+     #:mime-type #"application/xml")))
 
 (define update-category
   (lambda (req)
@@ -383,9 +388,9 @@
       (for/list ((t (mongo-dict-query "task" (hasheq))))
         (if (string=? (task-starttime t) starttime)
             (set-task-endtime! t 
-			       (number->string 
-				(+ (* (string->number hours) 3600000) 
-				   (string->number starttime))))
+                               (number->string 
+                                (+ (* (string->number hours) 3600000) 
+                                   (string->number starttime))))
             '())))
     (response/xexpr
      '(msg "EndTime Updated")
@@ -476,50 +481,50 @@
                (string=? "id" (client-cookie-name c)))
              cookies))
     (if id-cookie 
-	(redirect-to "/timer") 
-	(begin
-	  (response/xexpr
-	   `(html
-	     (head (title "Task Timer")
-		   (script ((type "text/javascript")(src "jquery-1.7.1.min.js")) " ")
-		   (link ((href "http://fonts.googleapis.com/css?family=Geostar+Fill") (rel "stylesheet") (type "text/css"))" ")
-		   (script ((type "text/javascript")(src "tasktimer.js"))" "))
-	     (body ((link "#000000")(bgcolor "darkgreen")
-    (style "background-image: url(gradient.png);background-repeat: repeat;"))
-		   (div ((id "center_content")
-			 (style "margin-left:auto;margin-right:auto;width:700px;"))
-			(div ((style "border:1px solid black;background-color:#E9C2A6;align-text:center;margin-left:auto;margin-right:auto;width:700px;font-family: 'Geostar Fill',cursive;background-image:url(wood.png);background-repeat:repeat;"))
-			     (table
-			      (tr
-			       (td
-				(img ((src "tasktimer.png")
-				      (width "128")(height "128"))))
-			       (td
-				(h1 "Task Timer")))))
-			(div ((style "border:1px solid black;background:#99CCFF;padding-top:5px;padding-left:5px;"))
-			     (div ((id "message_div") (style "color:red;")) 
-				  ,(cond
-				    ((string=? msg "notnew")
-				     "Please choose another user name.")
-				    ((string=? msg "nomatch")
-				     "Your passwords did not match.")
-				    ((string=? msg "baduser")
-				     "Login failed.")
-				    (else
-				     " ")))
-			     (form ((id "logon_form")
-				    (action "validate-user")
-				    (onsubmit "return check_login();"))
-				   ,@(formlet-display user-formlet)
-				   (br)
-				   (input ((type "submit")(name "login")(value "Login")))))
-			(div ((style "border:1px solid black;background:#99CCFF;padding-top:5px;padding-left:5px;"))
-			     (form ((id "create_logon_form") 
-				    (action "validate-new-user")
-				    (onsubmit "return cmp_passwords();"))
-				   ,@(formlet-display new-user-formlet)
-				   (br)
-				   (input ((type "submit")(name "login")(value "Create Account")))))))))))))
+        (redirect-to "/timer") 
+        (begin
+          (response/xexpr
+           `(html
+             (head (title "Task Timer")
+                   (script ((type "text/javascript")(src "jquery-1.7.1.min.js")) " ")
+                   (link ((href "http://fonts.googleapis.com/css?family=Geostar+Fill") (rel "stylesheet") (type "text/css"))" ")
+                   (script ((type "text/javascript")(src "tasktimer.js"))" "))
+             (body ((link "#000000")(bgcolor "darkgreen")
+                                    (style "background-image: url(gradient.png);background-repeat: repeat;"))
+                   (div ((id "center_content")
+                         (style "margin-left:auto;margin-right:auto;width:700px;"))
+                        (div ((style "border:1px solid black;background-color:#E9C2A6;align-text:center;margin-left:auto;margin-right:auto;width:700px;font-family: 'Geostar Fill',cursive;background-image:url(wood.png);background-repeat:repeat;"))
+                             (table
+                              (tr
+                               (td
+                                (img ((src "tasktimer.png")
+                                      (width "128")(height "128"))))
+                               (td
+                                (h1 "Task Timer")))))
+                        (div ((style "border:1px solid black;background:#99CCFF;padding-top:5px;padding-left:5px;"))
+                             (div ((id "message_div") (style "color:red;")) 
+                                  ,(cond
+                                     ((string=? msg "notnew")
+                                      "Please choose another user name.")
+                                     ((string=? msg "nomatch")
+                                      "Your passwords did not match.")
+                                     ((string=? msg "baduser")
+                                      "Login failed.")
+                                     (else
+                                      " ")))
+                             (form ((id "logon_form")
+                                    (action "validate-user")
+                                    (onsubmit "return check_login();"))
+                                   ,@(formlet-display user-formlet)
+                                   (br)
+                                   (input ((type "submit")(name "login")(value "Login")))))
+                        (div ((style "border:1px solid black;background:#99CCFF;padding-top:5px;padding-left:5px;"))
+                             (form ((id "create_logon_form") 
+                                    (action "validate-new-user")
+                                    (onsubmit "return cmp_passwords();"))
+                                   ,@(formlet-display new-user-formlet)
+                                   (br)
+                                   (input ((type "submit")(name "login")(value "Create Account")))))))))))))
 
 (define save-task
   (lambda (req)
@@ -535,15 +540,15 @@
                       (make-hasheq
                        (list (cons 'starttime starttime))))))
       (for/list ((t (mongo-dict-query "task" (hasheq))))
-		(if (equal? (task-starttime t) starttime)
-		    (begin
-		      (set-task-bugnumber! t bugnumber)
-		      (set-task-endtime! t endtime)
-		      (set-task-category! t category)
-		      (set-task-comment! t comment)
-		      (set-task-in-progress! t 0)
-		      (set-task-username! t (current-username req)))
-		    '())))
+        (if (equal? (task-starttime t) starttime)
+            (begin
+              (set-task-bugnumber! t bugnumber)
+              (set-task-endtime! t endtime)
+              (set-task-category! t category)
+              (set-task-comment! t comment)
+              (set-task-in-progress! t 0)
+              (set-task-username! t (current-username req)))
+            '())))
     (response/xexpr
      '(msg "Task saved."))))
 

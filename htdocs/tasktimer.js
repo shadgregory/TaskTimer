@@ -147,51 +147,48 @@ function add_task() {
     if (hour < 10)
 	hour = "0" + hour;
     var task_row = $("<tr id='task_" + 
-		     d.getTime() + 
-		     "'><td><input type='hidden' value='" + 
-		     d.getTime() +
-		     "' id='starttime_"+
-		     d.getTime() +
-		     "'><input type='text' onchange='update_bugnum(" + 
-		     d.getTime() + 
-		     ")' id='bug_num_"+ 
-		     d.getTime() + 
-		     "'></td><td><input type='text' onchange='update_cat(" + 
-		     d.getTime() + 
-		     ")' id='auto_cat" + 
-		     d.getTime() + 
-		     "'></td><input type='hidden' onchange='update_notes("+ 
-		     d.getTime() + 
-		     ")' id='comment_" + 
-		     d.getTime() + 
-		     "'><td style='text-align:center;'><img src='Add_text_icon.png' /" +
-		     "title=''" +
-		     "id='comment_img_" +
-		     d.getTime() +
-		     "' onclick='show_dialog(" +
-		     d.getTime() + ")'" +
-		     "'></td>"+
-		     /*
-		     "<td style='text-align:center;'>" + 
-		     year + "-" + month + "-" + day + " " + hour + ":" + min + ":" + sec +
-		     "</td>" + 
-		     */
-		     "<td colspan='3'><button onclick='cancel_task(" + 
-		     d.getTime() + 
-		     ")'>CANCEL</button><button id='end_"+
-		     d.getTime() +
-		     "' onclick='end_task(" +
-		     d.getTime() + 
-		     ")'>END</button><button style='display:inline;' id='pause_" + 
-		     d.getTime() + 
-		     "' onclick='pause(" +
-		     d.getTime() +
-		     ")'>PAUSE</button><button style='display:none;' id='unpause_" + 
-		     d.getTime() +
-		     "' onclick='unpause(" +
-		     d.getTime() +
-		     ")'>UNPAUSE</button></td><td><div style='font-weight:bold;' id='timer_"+
-		     d.getTime()+"'>00:00:00</div></td></tr>");
+					 d.getTime() + 
+					 "'><td>" +
+                     "<img src='pause.png' height='9' style='display:inline;width:25px;height:25px;vertical-align:text-bottom;' id='pause_" +
+					 d.getTime() +
+                     "' onclick='pause(" +
+	    			 d.getTime() + ")'/>" +
+                     "<img src='play.png' height='9' style='display:none;width:25px;height:25px;vertical-align:text-bottom;' id='unpause_" +
+					 d.getTime() +
+                     "' onclick='unpause(" +
+	    			 d.getTime() + ")'/></td>" +
+					 "<td><input type='hidden' value='" + 
+					 d.getTime() +
+					 "' id='starttime_"+
+					 d.getTime() +
+					 "'><input type='text' onchange='update_bugnum(" + 
+					 d.getTime() + 
+					 ")' id='bug_num_"+ 
+					 d.getTime() + 
+					 "'></td><td><input type='text' onchange='update_cat(" + 
+					 d.getTime() + 
+					 ")' id='auto_cat" + 
+					 d.getTime() + 
+					 "'></td><input type='hidden' onchange='update_notes("+ 
+					 d.getTime() + 
+					 ")' id='comment_" + 
+					 d.getTime() + 
+					 "'><td style='text-align:center;'><img src='Add_text_icon.png' /" +
+					 "title=''" +
+					 "id='comment_img_" +
+					 d.getTime() +
+					 "' onclick='show_dialog(" +
+					 d.getTime() + ")'" +
+					 "'></td>"+
+					 "<td colspan='2'><button onclick='cancel_task(" + 
+					 d.getTime() + 
+					 ")'>CANCEL</button><button id='end_"+
+					 d.getTime() +
+					 "' onclick='end_task(" +
+					 d.getTime() + 
+					 ")'>END</button>" + 
+					 "</td><td><div style='font-weight:bold;' id='timer_"+
+					 d.getTime()+"'>00:00:00</div></td></tr>");
     var interval_id = setInterval("update_timer("+d.getTime()+")",1000);
     timer_hash[d.getTime()] = interval_id;
     paused_hash[d.getTime()] = 0;
