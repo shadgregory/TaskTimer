@@ -1,3 +1,5 @@
 Web application for tracking tasks. Racket + YUI + MongoDB.
 
-Running it is as easy as 'racket main.rkt'
+Running it is as easy as 'racket main.rkt'.
+
+TaskTimer is available under the LGPL.
