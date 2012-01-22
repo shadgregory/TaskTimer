@@ -409,7 +409,8 @@
       (for/list ((t (mongo-dict-query "task" (hasheq))))
         (if (string=? (task-starttime t) starttime)
             (set-task-comment! t comment)
-            (display "no match"))))
+            '()
+            )))
     (response/xexpr
      '(msg "Notes Updated")
      #:mime-type #"application/xml")))
