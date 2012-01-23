@@ -386,7 +386,7 @@
                       (make-hasheq
                        (list (cons 'starttime starttime))))))
       (for/list ((t (mongo-dict-query "task" (hasheq))))
-        (if (string=? (task-starttime t) starttime)
+        (if (equal? (task-starttime t) starttime)
             (set-task-endtime! t 
                                (number->string 
                                 (+ (* (string->number hours) 3600000) 
