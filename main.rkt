@@ -407,7 +407,7 @@
                       (make-hasheq
                        (list (cons 'starttime starttime))))))
       (for/list ((t (mongo-dict-query "task" (hasheq))))
-        (if (string=? (task-starttime t) starttime)
+        (if (equal? (task-starttime t) starttime)
             (set-task-comment! t comment)
             '()
             )))
@@ -439,7 +439,7 @@
                       (make-hasheq
                        (list (cons 'starttime starttime))))))
       (for/list ((t (mongo-dict-query "task" (hasheq))))
-        (if (string=? (task-starttime t) starttime)
+        (if (equal? (task-starttime t) starttime)
             (set-task-bugnumber! t bugnumber)
             (display "no match"))))
     (response/xexpr
