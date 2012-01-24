@@ -368,7 +368,7 @@
                       (make-hasheq
                        (list (cons 'starttime starttime))))))
       (for/list ((t (mongo-dict-query "task" (hasheq))))
-        (if (string=? (task-starttime t) starttime)
+        (if (equal? (task-starttime t) starttime)
             (set-task-category! t category)
             '())))
     (response/xexpr
@@ -441,7 +441,7 @@
       (for/list ((t (mongo-dict-query "task" (hasheq))))
         (if (equal? (task-starttime t) starttime)
             (set-task-bugnumber! t bugnumber)
-            (display "no match"))))
+            '())))
     (response/xexpr
      '(msg "Bug Number Updated")
      #:mime-type #"application/xml")))
