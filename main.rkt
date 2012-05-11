@@ -14,7 +14,7 @@
          xml
          "model.rkt"
          web-server/servlet-env)
-(require (planet "main.rkt" ("jaymccarthy" "mongodb.plt" 1 11)))
+(require (planet "main.rkt" ("jaymccarthy" "mongodb.plt" 1 12)))
 (require (planet "main.ss" ("dherman" "json.plt" 3 0)))
 
 (define m (create-mongo))
@@ -226,7 +226,7 @@
                                        (div ((id "all-tasks"))))
                                   )))))
                    (script ((type "text/javascript")) "init();")))))
-        (redirect-to ""))))
+        (redirect-to "/?msg=baduser"))))
 
 (define get-msg
   (lambda (request)
