@@ -214,7 +214,7 @@ function add_task() {
 	Y.Event.onAvailable('#auto_cat' + d.getTime(), function(e) {
 	    Y.one('#auto_cat'+d.getTime()).plug(Y.Plugin.AutoComplete, {
 		resultHighlighter: 'phraseMatch',
-		source: ['QA (R&D)','QA (Support)','R&D','R&D Planning','R&D Documentation','Lunch','IT','TEST'],
+		source: ['QA (R&D)','QA (Support)','R&D','R&D Planning','R&D Documentation','Lunch','IT','TEST','Meeting'],
 		on : {
 		    select : function(e) {
 		    }
@@ -304,7 +304,7 @@ function init() {
 			      resultHighlighter: 'phraseMatch',
 			      source: ['QA (R&D)','QA (Support)','R&D',
 				       'R&D Planning','R&D Documentation',
-				       'Lunch','IT','TEST']
+				       'Lunch','IT','TEST','Meeting']
 			  });
 		      });
 		  }
