@@ -194,33 +194,7 @@
                                                            
                                                            (td (div ((style "font-weight:bold")(id ,(string-append "timer_" (mongo-dict-ref t 'starttime)))) " ")))
                                                        (script ((type "text/javascript"))
-                                                               ,(string-append "var interval_id = setInterval(\"update_timer('"
-                                                                               (mongo-dict-ref t 'starttime) 
-                                                                               "')\", 1000);"
-                                                                               "timer_hash["
-                                                                               (mongo-dict-ref t 'starttime)
-                                                                               "] = interval_id;"
-                                                                               "paused_hash["
-                                                                               (mongo-dict-ref t 'starttime)
-                                                                               "] = 0;"
-                                                                               "$.ajax({"
-                                                                               "url: 'get-paused-time',"
-                                                                               "data: 'starttime=' + "
-                                                                               (mongo-dict-ref t 'starttime)
-                                                                               ","
-                                                                               "context:document.body,"
-                                                                               "dataType: 'xml',"
-                                                                               "success: function(data) {"
-                                                                               "var xml = data;"
-                                                                               "$(xml).find('paused_time').each(function(){"
-                                                                               "paused_hash["
-                                                                               (mongo-dict-ref t 'starttime)
-                                                                               "] = $(this).text();"
-                                                                               "});"
-                                                                               "}"
-                                                                               "});"
-                                                                               )))
-                                                  )))
+                                                               (string-append "start_timer(" (mongo-dict-ref t 'starttime) ");"))))))
                                   (div ((style "min-height:430px")(id "datatable"))
                                        (div ((id "pg")) " ")
                                        (div ((id "all-tasks"))))

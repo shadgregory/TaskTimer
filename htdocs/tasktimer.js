@@ -128,6 +128,25 @@ function unpause(st) {
     timer_hash[st] = interval_id;
 }
 
+function start_timer(st) {
+    var interval_id = setInterval("update_timer("+st+")",1000);
+    timer_hash[st] = interval_id;
+    paused_hash[st] = 0;
+    $.ajax({
+	url: "get-paused-time",
+	data: "starttime=" + st,
+	dataType: 'xml',
+	context:document.body,
+	success: function(data) {
+	    var xml = data;
+	    $(xml).find("paused_time").each(function(){
+		paused_hash[st] = $(this).text();
+	    });
+	}
+    });
+    return interval_id;
+}
+
 function add_task() {
     var d = new Date();
     var month = d.getMonth() + 1;
@@ -189,24 +208,7 @@ function add_task() {
 					 ")'>END</button>" + 
 					 "</td><td><div style='font-weight:bold;' id='timer_"+
 					 d.getTime()+"'>00:00:00</div></td></tr>");
-    var interval_id = setInterval("update_timer("+d.getTime()+")",1000);
-    timer_hash[d.getTime()] = interval_id;
-    paused_hash[d.getTime()] = 0;
-    $.ajax({
-	url: "get-paused-time",
-	data: "starttime=" + d.getTime(),
-	context:document.body,
-	dataType: 'xml',
-	success: function(data) {
-	    var xml = data;
-	    $(xml).find("paused_time").each(function(){
-		paused_hash[d.getTime()] = $(this).text();
-	    });
-	},
-	failure: function(data) {
-	    alert("failure");
-	}
-    });
+    start_timer(d.getTime());
 
     $("#tasks-table tr:last").after(task_row);
 
