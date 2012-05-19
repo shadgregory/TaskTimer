@@ -100,7 +100,11 @@
                (string=? "id" (client-cookie-name c)))
              cookies))
     (if id-cookie
-        (let ((username (client-cookie-value id-cookie)))
+        ;        (let ((username (client-cookie-value id-cookie)))
+        (let ((username (current-username req)))
+          (if (string=? username "baduser")
+              (redirect-to "/?msg=baduser")
+              '())
           (response/xexpr
            `(html
              (head
@@ -209,6 +213,13 @@
           ((null? bindings-lst) " ")
           (else (car bindings-lst)))))
 
+(define get-cookieid
+  (lambda (username)
+    (let ((cookieid (for/last ([u (mongo-dict-query "user" (hasheq))]
+                               #:when (string=? username (user-username u)))
+                      (user-cookieid u))))
+      (if cookieid cookieid ""))))
+
 (define current-user?
   (lambda (username password)
     (define current? #f)
@@ -262,14 +273,16 @@
 
 (define current-username
   (lambda (req)
-    (define cookies (request-cookies req))
-    (define id-cookie
-      (findf (lambda (c)
-               (string=? "id" (client-cookie-name c)))
-             cookies))
-    (if id-cookie
-        (client-cookie-value id-cookie)
-        (redirect-to "/?msg=baduser"))))
+    (let* ((cookies (request-cookies req))
+           (the-cookie (findf (lambda (c)
+                                (string=? "id" (client-cookie-name c)))
+                              cookies))
+           (username (car (regexp-split #rx"-" (client-cookie-value the-cookie)))))
+      (if (and the-cookie (string=? 
+                           (string-append username "-" (get-cookieid username))
+                           (client-cookie-value the-cookie)))
+          username
+          "baduser"))))
 
 (define calculate-hours
   (lambda (starttime endtime username)
@@ -426,10 +439,16 @@
       ((current-user? (car (formlet-process user-formlet req))
                       (second
                        (formlet-process user-formlet req)))
-       (define id-cookie 
-         (make-cookie "id" 
-                      (car (formlet-process user-formlet req)) #:secure? #t))
-       (redirect-to "timer" #:headers (list (cookie->header id-cookie))))
+       (let* ((username (car (formlet-process user-formlet req)))
+              (cookieid (number->string (random 4294967087)))
+              (id-cookie (make-cookie "id" (string-append  username "-" cookieid) #:secure? #t)))
+         (for/list ((u (mongo-dict-query "user" (hasheq))))
+           (cond
+             ((string=? username (user-username u))
+              (set-user-cookieid! u cookieid))
+             (else
+              '())))
+         (redirect-to "timer" #:headers (list (cookie->header id-cookie)))))
       (else
        (redirect-to "/?msg=baduser")))))
 

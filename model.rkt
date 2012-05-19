@@ -18,7 +18,8 @@
 
 (define-mongo-struct
   user "user"
-  ([username #:required]
-   [password #:required]))
+  ((username #:required)
+   (cookieid)
+   (password #:required)))
 
 (provide (all-defined-out))
