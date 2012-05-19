@@ -2,4 +2,7 @@ Web application for tracking tasks. Racket + YUI + MongoDB.
 
 Running it is as easy as 'racket main.rkt'.
 
-TaskTimer is available under the LGPL.
+For instructions in creating the pem files, please see :
+http://docs.racket-lang.org/web-server-internal/Troubleshooting_and_Tips.html?q=https#(part._faq~3ahttps)
+
+TaskTimer is available under the GNU Lesser General Public License (LGPL).
