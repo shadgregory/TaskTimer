@@ -327,6 +327,9 @@ function init() {
 		  if (id_value == null) {
 		      window.location = "/";
 		  }
+          var calendar = new Y.Calendar({
+            contentBox: "#cal"
+          });
 		  var tabview = new Y.TabView({srcNode:'#timertab'});
 		  tabview.render();
 		  
@@ -394,6 +397,7 @@ function init() {
 		      });
 		      tabview.add(tab);
 		      tabview.render();
+              calendar.render();
 		  });
 		  tabview.on('selectionChange', function(e) {
 		      if (e.newVal.get('label') == 'Chart')

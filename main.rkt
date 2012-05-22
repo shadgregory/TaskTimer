@@ -100,7 +100,6 @@
                (string=? "id" (client-cookie-name c)))
              cookies))
     (if id-cookie
-        ;        (let ((username (client-cookie-value id-cookie)))
         (let ((username (current-username req)))
           (if (string=? username "baduser")
               (redirect-to "/?msg=baduser")
@@ -118,24 +117,26 @@
              
              (body ((link "#000000")(alink "#000000")(vlink "#000000")
                                     (class "yui3-skin-sam yui-skin-sam")
-                                    (bgcolor "darkgreen")
-                                    (style "background-image: url(gradient.png);background-repeat: repeat;"))
+                                    (bgcolor "#228B22"))
                    (table ((style "margin-left:auto;margin-right:auto;"))
                           (tr
                            (td
-                            (div ((style "border:1px solid black;background-color:#E9C2A6;align-text:center;background-image:url(wood.png);background-repeat:repeat;"))
+                            (div ((class "header"))
                                  (table
                                   (tr
                                    (td (img ((src "tasktimer.png")(width "128")(height "128"))))
                                    (td
-                                    (h1 ((style "font-family:'Geostar Fill',cursive;"))"Task Timer"))))
-                                 (a ((href "#")(onclick "logout();")) "Logout"))))
+                                    (h1 ((id "title"))"Task Timer"))
+				   (td ((style "width:300px;text-align:right;vertical-align:bottom;"))
+				       (a ((href "#")(onclick "logout();")) "Logout")))))))
                           (tr
                            (td
                             (div ((id "timertab")(style "min-width:600px;"))
                                  (ul
                                   (li
                                    (a ((href "#tasks-list")) "Create Tasks"))
+                                  (li
+                                   (a ((href "#cal")) "Calendar"))
                                   (li
                                    (a ((href "#datatable")) "Data")))
                                  (div
@@ -199,6 +200,7 @@
                                                            (td (div ((style "font-weight:bold")(id ,(string-append "timer_" (mongo-dict-ref t 'starttime)))) " ")))
                                                        (script ((type "text/javascript"))
                                                                (string-append "start_timer(" (mongo-dict-ref t 'starttime) ");"))))))
+                                  (div ((style "min-height:430px")(id "cal"))"")
                                   (div ((style "min-height:430px")(id "datatable"))
                                        (div ((id "pg")) " ")
                                        (div ((id "all-tasks"))))
@@ -482,12 +484,11 @@
              (head (title "Task Timer")
                    (script ((type "text/javascript")(src "jquery-1.7.1.min.js")) " ")
                    (link ((href "http://fonts.googleapis.com/css?family=Geostar+Fill") (rel "stylesheet") (type "text/css"))" ")
+		   (link ((type "text/css")(rel "stylesheet")(href "tasktimer.css")) " ")
                    (script ((type "text/javascript")(src "tasktimer.js"))" "))
-             (body ((link "#000000")(bgcolor "darkgreen")
-                                    (style "background-image: url(gradient.png);background-repeat: repeat;"))
-                   (div ((id "center_content")
-                         (style "margin-left:auto;margin-right:auto;width:700px;"))
-                        (div ((style "border:1px solid black;background-color:#E9C2A6;align-text:center;margin-left:auto;margin-right:auto;width:700px;font-family: 'Geostar Fill',cursive;background-image:url(wood.png);background-repeat:repeat;"))
+             (body ((link "#000000")(bgcolor "#228B22"))
+                   (div ((id "center_content"))
+                        (div ((class "header"))
                              (table
                               (tr
                                (td

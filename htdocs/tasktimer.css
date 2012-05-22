@@ -17,7 +17,27 @@ img.title:hover span{ /*the span will display just on :hover state*/
     background-color:#cff; color:#000;
     text-align: center
 }
-
-.tasktimer {
-    background-color:#2F4F2F
+#center_content 
+{
+    margin-left:auto;
+    margin-right:auto;
+    width:700px;
 }
+
+h1#title {
+    font-family: 'Geostar Fill',cursive;
+}
+
+.header {
+    border:1px solid black;
+    background-color:#E9C2A6;
+    align-text:center;
+    margin-left:auto;
+    margin-right:auto;
+    width:700px;
+    height:139px;
+    background-image:url(brownish.png);
+    background-repeat:repeat;")
+}
+
+
