@@ -303,7 +303,6 @@ function init() {
 	      "yui2-connection",
 	      "yui2-container",
 	      "yui2-animation",
-	      "yui2-calendar",
 	      "autocomplete",
 	      'autocomplete-highlighters',
 	      "charts",
@@ -347,7 +346,6 @@ function init() {
 		  var calendar = new Y.Calendar({
 		      contentBox: "#cal"
 		  });
-//		  var calendar = new YAHOO.widget.Calendar("cal");
 		  var tabview = new Y.TabView({srcNode:'#timertab'});
 		  tabview.render();
 		  
