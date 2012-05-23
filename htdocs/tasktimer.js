@@ -72,6 +72,7 @@ function update_notes (st) {
             "&comment=" + $("#comment_" + st).val()
     });
 }
+
 function update_timer(st){
     var d = new Date();
     var diff = Math.floor((d.getTime() - st - paused_hash[st]) / 1000);
@@ -283,20 +284,17 @@ function getElementsByRegExpId(p_regexp, p_element, p_tagName) {
 }
 
 function addNewRule(ruleSet, path, ruleName) {
-    var currentObject = ruleSet;
+    var year = path[0];
+    var month = path[1];
+    var day = path[2];
 
-    for (var i = 0, len = path.length - 1; i <= len; i++) {
-	if (i == len) {
-	    currentObject[path[i]] = ruleName;
-	}
-	else {
-	    currentObject[path[i]] = {};
-	    currentObject = currentObject[path[i]];
-	}
-    }
+    if (!ruleSet[path[0]])
+	ruleSet[path[0]] = {};
+    if (!ruleSet[year][month])
+	ruleSet[year][month] = {};
+    ruleSet[year][month][day] = ruleName;
 
     return ruleSet;
-
 }
 
 function init() {
