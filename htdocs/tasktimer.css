@@ -17,8 +17,12 @@ img.title:hover span{ /*the span will display just on :hover state*/
     background-color:#cff; color:#000;
     text-align: center
 }
-#center_content 
-{
+
+.yui3-skin-sam .redtext {
+  color:#ff0000;
+}
+
+#center_content {
     margin-left:auto;
     margin-right:auto;
     width:700px;

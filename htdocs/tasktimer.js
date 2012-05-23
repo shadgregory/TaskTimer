@@ -166,48 +166,48 @@ function add_task() {
     if (hour < 10)
 	hour = "0" + hour;
     var task_row = $("<tr id='task_" + 
-					 d.getTime() + 
-					 "'><td>" +
+		     d.getTime() + 
+		     "'><td>" +
                      "<img src='pause.png' height='9' style='display:inline;width:25px;height:25px;vertical-align:text-bottom;' id='pause_" +
-					 d.getTime() +
+		     d.getTime() +
                      "' onclick='pause(" +
-	    			 d.getTime() + ")'/>" +
+	    	     d.getTime() + ")'/>" +
                      "<img src='play.png' height='9' style='display:none;width:25px;height:25px;vertical-align:text-bottom;' id='unpause_" +
-					 d.getTime() +
+		     d.getTime() +
                      "' onclick='unpause(" +
-	    			 d.getTime() + ")'/></td>" +
-					 "<td><input type='hidden' value='" + 
-					 d.getTime() +
-					 "' id='starttime_"+
-					 d.getTime() +
-					 "'><input type='text' onchange='update_bugnum(" + 
-					 d.getTime() + 
-					 ")' id='bug_num_"+ 
-					 d.getTime() + 
-					 "'></td><td><input type='text' onchange='update_cat(" + 
-					 d.getTime() + 
-					 ")' id='auto_cat" + 
-					 d.getTime() + 
-					 "'></td><input type='hidden' onchange='update_notes("+ 
-					 d.getTime() + 
-					 ")' id='comment_" + 
-					 d.getTime() + 
-					 "'><td style='text-align:center;'><img src='Add_text_icon.png' /" +
-					 "title=''" +
-					 "id='comment_img_" +
-					 d.getTime() +
-					 "' onclick='show_dialog(" +
-					 d.getTime() + ")'" +
-					 "'></td>"+
-					 "<td colspan='2'><button onclick='cancel_task(" + 
-					 d.getTime() + 
-					 ")'>CANCEL</button><button id='end_"+
-					 d.getTime() +
-					 "' onclick='end_task(" +
-					 d.getTime() + 
-					 ")'>END</button>" + 
-					 "</td><td><div style='font-weight:bold;' id='timer_"+
-					 d.getTime()+"'>00:00:00</div></td></tr>");
+	    	     d.getTime() + ")'/></td>" +
+		     "<td><input type='hidden' value='" + 
+		     d.getTime() +
+		     "' id='starttime_"+
+		     d.getTime() +
+		     "'><input type='text' onchange='update_bugnum(" + 
+		     d.getTime() + 
+		     ")' id='bug_num_"+ 
+		     d.getTime() + 
+		     "'></td><td><input type='text' onchange='update_cat(" + 
+		     d.getTime() + 
+		     ")' id='auto_cat" + 
+		     d.getTime() + 
+		     "'></td><input type='hidden' onchange='update_notes("+ 
+		     d.getTime() + 
+		     ")' id='comment_" + 
+		     d.getTime() + 
+		     "'><td style='text-align:center;'><img src='Add_text_icon.png' /" +
+		     "title=''" +
+		     "id='comment_img_" +
+		     d.getTime() +
+		     "' onclick='show_dialog(" +
+		     d.getTime() + ")'" +
+		     "'></td>"+
+		     "<td colspan='2'><button onclick='cancel_task(" + 
+		     d.getTime() + 
+		     ")'>CANCEL</button><button id='end_"+
+		     d.getTime() +
+		     "' onclick='end_task(" +
+		     d.getTime() + 
+		     ")'>END</button>" + 
+		     "</td><td><div style='font-weight:bold;' id='timer_"+
+		     d.getTime()+"'>00:00:00</div></td></tr>");
     start_timer(d.getTime());
 
     $("#tasks-table tr:last").after(task_row);
@@ -288,6 +288,7 @@ function init() {
 	      "yui2-connection",
 	      "yui2-container",
 	      "yui2-animation",
+	      "yui2-calendar",
 	      "autocomplete",
 	      'autocomplete-highlighters',
 	      "charts",
@@ -296,7 +297,7 @@ function init() {
 	      "event-base",
 	      "tabview",
 	      "cookie",
-	      function(Y){
+	      function(Y) {
 		  var YAHOO = Y.YUI2;
 		  var cat_array = getElementsByRegExpId(/^auto_cat/i, document, "input");
 		  for (var i=0;i<cat_array.length;i++) {
@@ -327,9 +328,11 @@ function init() {
 		  if (id_value == null) {
 		      window.location = "/";
 		  }
-          var calendar = new Y.Calendar({
-            contentBox: "#cal"
-          });
+
+		  var calendar = new Y.Calendar({
+		      contentBox: "#cal"
+		  });
+//		  var calendar = new YAHOO.widget.Calendar("cal");
 		  var tabview = new Y.TabView({srcNode:'#timertab'});
 		  tabview.render();
 		  
@@ -397,7 +400,33 @@ function init() {
 		      });
 		      tabview.add(tab);
 		      tabview.render();
-              calendar.render();
+		      $.ajax({
+			    type: "GET",
+			    url: "get-tasks",
+			    dataType: 'xml',
+			    context:document.body,
+			    success: function(xml) {
+			      $(xml).find('tasks').each(function(){
+				  $(this).find('task').each(function(){
+				      var enddate = Math.floor($(this).find('enddate').text());
+				      var d = new Date(enddate);
+				      var y = d.getFullYear();
+				      var m = d.getMonth();
+				      var day = d.getDate();
+				      var rules = {};
+				      rules[y] = {};
+				      rules[y][m] = {};
+				      rules[y][m][day] = "dates-with-entries";
+				      var filterFunction = function (date, node, rules) {
+					  if (rules.indexOf("dates-with-entries" >= 0))
+			                      node.addClass("redtext");
+				      };
+				      calendar.set("customRenderer", {rules: rules, filterFunction: filterFunction});
+				  });
+			      });
+			    }
+		      });
+		      calendar.render();
 		  });
 		  tabview.on('selectionChange', function(e) {
 		      if (e.newVal.get('label') == 'Chart')
