@@ -35,13 +35,13 @@ h1#title {
 .header {
     border:1px solid black;
     background-color:#E9C2A6;
-    align-text:center;
+    text-align:center;
     margin-left:auto;
     margin-right:auto;
     width:700px;
     height:139px;
     background-image:url(brownish.png);
-    background-repeat:repeat;")
+    background-repeat:repeat;
 }
 
 

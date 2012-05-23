@@ -282,6 +282,23 @@ function getElementsByRegExpId(p_regexp, p_element, p_tagName) {
     return v_return;
 }
 
+function addNewRule(ruleSet, path, ruleName) {
+    var currentObject = ruleSet;
+
+    for (var i = 0, len = path.length - 1; i <= len; i++) {
+	if (i == len) {
+	    currentObject[path[i]] = ruleName;
+	}
+	else {
+	    currentObject[path[i]] = {};
+	    currentObject = currentObject[path[i]];
+	}
+    }
+
+    return ruleSet;
+
+}
+
 function init() {
     YUI().use("yui2-datatable",
 	      "yui2-paginator",
@@ -407,16 +424,14 @@ function init() {
 			    context:document.body,
 			    success: function(xml) {
 			      $(xml).find('tasks').each(function(){
+				  var rules = {};
 				  $(this).find('task').each(function(){
 				      var enddate = Math.floor($(this).find('enddate').text());
 				      var d = new Date(enddate);
 				      var y = d.getFullYear();
 				      var m = d.getMonth();
 				      var day = d.getDate();
-				      var rules = {};
-				      rules[y] = {};
-				      rules[y][m] = {};
-				      rules[y][m][day] = "dates-with-entries";
+				      rules = addNewRule(rules, [y, m, day], "dates-with-entries");
 				      var filterFunction = function (date, node, rules) {
 					  if (rules.indexOf("dates-with-entries" >= 0))
 			                      node.addClass("redtext");
