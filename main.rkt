@@ -530,8 +530,7 @@
   (lambda (req)
     (define bindings (request-bindings req))
     (let*
-        ((bugnumber (extract-binding/single 'bugnumber bindings))
-         (comment (extract-binding/single 'comment bindings))
+        ((comment (extract-binding/single 'comment bindings))
          (endtime (extract-binding/single 'endtime bindings))
          (category (extract-binding/single 'category bindings))
          (starttime (extract-binding/single 'starttime bindings))
@@ -542,7 +541,6 @@
       (for/list ((t (mongo-dict-query "task" (hasheq))))
         (if (equal? (task-starttime t) starttime)
             (begin
-              (set-task-bugnumber! t bugnumber)
               (set-task-endtime! t endtime)
               (set-task-category! t category)
               (set-task-comment! t comment)
