@@ -2,14 +2,16 @@ var current_st = "";
 var timer_hash = new Object();
 var paused_hash = new Object();
 var begin_paused_hash = new Object();
+var categoryArray =  ['QA (R&D)','QA (Support)','R&D','R&D Planning','R&D Documentation','Lunch','IT','TEST','Meeting'];
 function cmp_passwords () {
     if ($('#new_password').val() == $('#new_password2').val()){
-	return true;
+	    return true;
     } else {
-	$('#message_div').html("The passwords do not match.");
-	return false;
+	    $('#message_div').html("The passwords do not match.");
+	    return false;
     }
 }
+
 function logout() {
     YUI().use('cookie', function(Y) {
 	Y.Cookie.remove("id");
@@ -23,19 +25,10 @@ function timedRefresh(timeoutPeriod) {
 
 function check_login () {
     if ($('#password').val() == '') {
-		$('#message_div').html("Password is required.");
-		return false;
+	$('#message_div').html("Password is required.");
+	return false;
     }
     return true;
-}
-
-function update_bugnum (st) {
-    $.ajax({
-	url: "update-bugnum",
-	context: document.body,
-	data: "starttime=" + $("#starttime_" + st).val() +
-        "&bugnumber=" + $("#bug_num_" + st).val()
-    });
 }
 
 function update_cat (st) {
@@ -45,6 +38,74 @@ function update_cat (st) {
 	data: "starttime=" + $("#starttime_" + st).val() +
             "&category=" + encodeURIComponent($("#auto_cat" + st).val())
     });
+}
+
+function add_row(table_id, cat_value, hours_value, note_value, verified, yui2) {
+    var tb = document.getElementById(table_id);
+    var lastRow = tb.rows.length; 
+    var row = tb.insertRow(lastRow); 
+    var buttoncell = row.insertCell(0); 
+    var deleteButton = document.createElement("input");
+    deleteButton.value = "X";
+    deleteButton.type = "button";
+    deleteButton.style.color = "red";
+    deleteButton.onclick = function() {
+	var i=this.parentNode.parentNode.rowIndex;
+	document.getElementById(table_id).deleteRow(i-2);
+    };
+    buttoncell.appendChild(deleteButton);
+    var catcell = row.insertCell(1); 
+    var acDiv = document.createElement("div"); 
+    acDiv.id = "myAutoComplete";
+    var hcDiv = document.createElement("div"); 
+    hcDiv.id = "hourscomplete";
+    var noteDiv = document.createElement("div"); 
+    noteDiv.id = "tasknotes";
+    var catDiv = document.createElement("div"); 
+    catDiv.id = "categorycomplete";
+    var catcontr = document.createElement("div");
+    catcontr.id = "categorycontainer" + lastRow;
+    var hourscontr = document.createElement("div");
+    hourscontr.id = "hourscontainer" + lastRow;
+    var notescontr = document.createElement("div");
+    notescontr.id = "notescontainer" + lastRow;
+    var catinput = document.createElement("input"); 
+    catinput.type="text";
+    catinput.name = "category" + lastRow;
+    catinput.id = "category" + lastRow;
+    catinput.value = cat_value;
+    catDiv.appendChild(catinput);
+    catDiv.appendChild(catcontr);
+    catcell.appendChild(catDiv);
+    var notescell = row.insertCell(2); 
+    var hourscell = row.insertCell(3); 
+    var hoursinput = document.createElement("input"); 
+    var notesinput = document.createElement("input"); 
+    hoursinput.type = "text"; 
+    notesinput.type = "text"; 
+    hoursinput.name = "hours" + lastRow;
+    notesinput.name = "note" + lastRow;
+    hoursinput.id = "hours" + lastRow;
+    notesinput.id = "note" + lastRow;
+    hoursinput.value = hours_value;
+    hoursinput.size = 4;
+    notesinput.value = note_value;
+    hcDiv.appendChild(hoursinput);
+    hcDiv.appendChild(hourscontr);
+    noteDiv.appendChild(notesinput);
+    noteDiv.appendChild(notescontr);
+    hourscell.appendChild(hcDiv);
+    notescell.appendChild(noteDiv);
+    /*
+    var catAutoComp = new yui2.widget.AutoComplete("category"+lastRow,"categorycontainer"+lastRow, categoryArray);
+    catAutoComp.typeAhead = true;
+    catAutoComp.queryMatchContains = true;
+    */
+    if (verified) {
+	notesinput.disabled = true;
+	hoursinput.disabled = true;
+	catinput.disabled = true;
+    }
 }
 
 function saveComments() {
@@ -176,15 +237,11 @@ function add_task() {
                      "<img src='play.png' height='9' style='display:none;width:25px;height:25px;vertical-align:text-bottom;' id='unpause_" +
 		     d.getTime() +
                      "' onclick='unpause(" +
-	    	     d.getTime() + ")'/></td>" +
-		     "<td><input type='hidden' value='" + 
+	    	     d.getTime() + ")'/>" +
+		     "<input type='hidden' value='" + 
 		     d.getTime() +
 		     "' id='starttime_"+
 		     d.getTime() +
-		     "'><input type='text' onchange='update_bugnum(" + 
-		     d.getTime() + 
-		     ")' id='bug_num_"+ 
-		     d.getTime() + 
 		     "'></td><td><input type='text' onchange='update_cat(" + 
 		     d.getTime() + 
 		     ")' id='auto_cat" + 
@@ -217,7 +274,7 @@ function add_task() {
 	Y.Event.onAvailable('#auto_cat' + d.getTime(), function(e) {
 	    Y.one('#auto_cat'+d.getTime()).plug(Y.Plugin.AutoComplete, {
 		resultHighlighter: 'phraseMatch',
-		source: ['QA (R&D)','QA (Support)','R&D','R&D Planning','R&D Documentation','Lunch','IT','TEST','Meeting'],
+		source: categoryArray,
 		on : {
 		    select : function(e) {
 		    }
@@ -248,8 +305,8 @@ function end_task(st) {
     $.ajax({
 	url: "save-task",
 	context: document.body,
-	data: "bugnumber=" + $("#bug_num_" + st).val() +
-	    "&comment=" + encodeURIComponent($("#comment_" + st).val()) +
+	data:
+	    "comment=" + encodeURIComponent($("#comment_" + st).val()) +
 	    "&category=" + encodeURIComponent($("#auto_cat" + st).val()) +
 	    "&starttime=" + $("#starttime_" + st).val() +
 	    "&endtime=" + d.getTime(),
@@ -312,7 +369,7 @@ function init() {
 	      "tabview",
 	      "cookie",
 	      function(Y) {
-		  var YAHOO = Y.YUI2;
+		  var yui2 = Y.YUI2;
 		  var cat_array = getElementsByRegExpId(/^auto_cat/i, document, "input");
 		  for (var i=0;i<cat_array.length;i++) {
 		      var id_string = cat_array[i].id;
@@ -325,7 +382,7 @@ function init() {
 			  });
 		      });
 		  }
-		  dialog = new YAHOO.widget.Dialog("taskPanel", {
+		  dialog = new yui2.widget.Dialog("taskPanel", {
 		      draggable:true,
 		      fixedcenter:true
 		  });
@@ -346,27 +403,72 @@ function init() {
 		  var calendar = new Y.Calendar({
 		      contentBox: "#cal"
 		  });
+		  var cal_dialog = new yui2.widget.Dialog("calDialog", {
+		      close:true,
+		      visible:false,
+		      constraintoviewport: true,
+		      width:500,
+		      fixedcenter:true,
+		      draggable:true});
+
+		  calendar.on("dateClick", function (ev) {
+		      var newDate = ev.date;
+		      var month   = Y.DataType.Date.format(newDate, {format:"%m"});
+		      var day     = Y.DataType.Date.format(newDate, {format:"%e"});
+		      var year    = Y.DataType.Date.format(newDate, {format:"%Y"});
+     		      var addBlankRow = function() {
+			  add_row("tbody-"+month+day+year,"","","","","",yui2); 
+		      };
+		      var myButtons = [
+			  {text: "Add Task", handler: addBlankRow, isDefault:true},
+			  {text: "Save"},
+			  {text: "Cancel", handler: function(){cal_dialog.hide();}}
+		      ];
+		      cal_dialog.cfg.queueProperty("buttons", myButtons);
+		      cal_dialog.setHeader("Enter time for " + month + "/" + day + "/" + year + ":");
+		      cal_dialog.setBody('<table id="table-'+month+day+year+'"><thead><tr><td></td><td><b>Category</b></td><td><b>Notes</b></td><td><b>Hours</b></td></tr></thead> \
+                                          <tbody id="tbody-'+month+day+year+'"></tbody></table>');
+		      $.ajax({
+			  type: "GET",
+			  url: "get-tasks-with-date",
+			  dataType: "xml",
+			  data: "month=" + month + "&day="+day+"&year="+year,
+			  success: function(xml) {
+			      $(xml).find('tasks').each(function(){
+				  $(this).find('task').each(function(){
+				      var category = $(this).find('category').text();
+				      var comment = $(this).find('comment').text();
+				      var hours = $(this).find('hours').text();
+				      add_row('table-'+month+day+year,category,hours,comment,false,yui2);
+				  });
+			      });
+			  }
+		      });
+
+		      cal_dialog.render(document.body);
+		      cal_dialog.show();
+		  });
 		  var tabview = new Y.TabView({srcNode:'#timertab'});
 		  tabview.render();
 		  
-		  var dataSource = new YAHOO.util.XHRDataSource("get-tasks?");
-		  dataSource.responseType = YAHOO.util.XHRDataSource.TYPE_XML;
+		  var dataSource = new yui2.util.XHRDataSource("get-tasks?");
+		  dataSource.responseType = yui2.util.XHRDataSource.TYPE_XML;
 		  dataSource.responseSchema = { 
 		      resultNode: "task", 
 		      fields: ["bugnumber","category","comment","hours","starttime","enddate"]
 		  };
 		  dataSource.connMethodPost = true; 
-		  YAHOO.widget.DataTable.formatDate = function(el, oRecord, oColumn, oData) {
+		  yui2.widget.DataTable.formatDate = function(el, oRecord, oColumn, oData) {
 		      var milliseconds = parseInt(oData);
 		      var dateObj = new Date(milliseconds);
 		      if(dateObj instanceof Date) {
 			  el.innerHTML = (dateObj.getMonth()+1) + "/" + dateObj.getDate() + "/" + dateObj.getFullYear();
 		      } else {
-			  el.innerHTML = YAHOO.lang.isValue(oData) ? oData : '';
+			  el.innerHTML = yui2.lang.isValue(oData) ? oData : '';
 		      }
 		  }
-		  var ttTextboxCellEditor = new YAHOO.widget.TextboxCellEditor({
-		      validator:YAHOO.widget.DataTable.validateNumber
+		  var ttTextboxCellEditor = new yui2.widget.TextboxCellEditor({
+		      validator:yui2.widget.DataTable.validateNumber
 		  });
 		  ttTextboxCellEditor.subscribe("saveEvent", function(args){
 		      $.ajax({
@@ -377,8 +479,6 @@ function init() {
 		      });
 		  });
 		  var cols = [
-		      {key:"bugnumber", locator:"*[local-name()='bugnumber']", 
-		       sortable:true, resizeable:true, label:"Bug Number"},
 		      {key:"category",  sortable:true, 
 		       locator:"*[local-name()='category']",label:"Category"},
 		      {key:"comment", sortable:true, resizeable:true, 
@@ -389,16 +489,16 @@ function init() {
                       {key:"starttime",locator:"[local-name()='starttime']"},
 		      {key:"enddate",  sortable:true, resizeable:true, 
 		       locator:"*[local-name()='enddate']",
-		       formatter:YAHOO.widget.DataTable.formatDate,
+		       formatter:yui2.widget.DataTable.formatDate,
 		       parser: 'date',
 		       label:"End Date"}
 		  ];
-		  var table = new YAHOO.widget.DataTable(
+		  var table = new yui2.widget.DataTable(
 		      "all-tasks", 
 		      cols, 
 		      dataSource, 
 		      {caption:"Tasks",
-		       paginator : new YAHOO.widget.Paginator({
+		       paginator : new yui2.widget.Paginator({
 			   rowsPerPage: 16
 		       })});
 		  table.subscribe("cellClickEvent", table.onEventShowCellEditor);
@@ -448,9 +548,9 @@ function init() {
 			      { success: table.onDataReturnInitializeTable, scope: table });
 		      }
 		  });
-		  AlertDialog = new YAHOO.widget.SimpleDialog("dlg1", {
+		  AlertDialog = new yui2.widget.SimpleDialog("dlg1", {
 		      width: "200px",
-		      effect:{effect:YAHOO.widget.ContainerEffect.FADE,duration:0.15},
+		      effect:{effect:yui2.widget.ContainerEffect.FADE,duration:0.15},
 		      fixedcenter:true,
 		      modal:true,
 		      visible:false,
@@ -459,7 +559,7 @@ function init() {
 		      buttons: [ { text:"ok", handler: function(){this.hide();}, isDefault:true }],
 		      draggable:false,
 		      effect: [
-			  { effect:YAHOO.widget.ContainerEffect.FADE,duration:0.1 }]
+			  { effect:yui2.widget.ContainerEffect.FADE,duration:0.1 }]
 		  });
 
 		  AlertDialog.setHeader("Alert");

@@ -21,13 +21,6 @@
 (define d (make-mongo-db m "tasktimer"))
 (current-mongo-db d)
 
-;gotta do something about this
-(define doctor-bugnum
-  (lambda (t)
-    (if (string? (mongo-dict-ref t 'bugnumber))
-        (mongo-dict-ref t 'bugnumber)
-        "")))
-
 (define doctor-category
   (lambda (t)
     (if (string? (mongo-dict-ref t 'category))
@@ -127,8 +120,8 @@
                                    (td (img ((src "tasktimer.png")(width "128")(height "128"))))
                                    (td
                                     (h1 ((id "title"))"Task Timer"))
-				   (td ((style "width:300px;text-align:right;vertical-align:bottom;"))
-				       (a ((href "#")(onclick "logout();")) "Logout")))))))
+                                   (td ((style "width:300px;text-align:right;vertical-align:bottom;"))
+                                       (a ((href "#")(onclick "logout();")) "Logout")))))))
                           (tr
                            (td
                             (div ((id "timertab")(style "min-width:600px;"))
@@ -145,7 +138,6 @@
                                        (table ((id "tasks-table"))
                                               (tr
                                                (th)
-                                               (th ((style "min-width:100px")) "Bug Number")
                                                (th ((style "min-width:100px")) "Category")
                                                (th "Notes")
                                                (th ((colspan "2")(style "min-width:150px")) "")
@@ -171,12 +163,6 @@
                                                           (value ,(mongo-dict-ref t 'starttime))
                                                           (type "hidden")))
                                                         (input ((type "text")
-                                                                (onchange ,(string-append "update_bugnum(" (mongo-dict-ref t 'starttime) ")"))
-                                                                (id ,(string-append "bug_num_" (mongo-dict-ref t 'starttime)))
-                                                                (value ,(doctor-bugnum t))
-                                                                )))
-                                                       (td
-                                                        (input ((type "text")
                                                                 (id ,(string-append "auto_cat" (mongo-dict-ref t 'starttime)))
                                                                 (onchange ,(string-append "update_cat(" (mongo-dict-ref t 'starttime) ")"))
                                                                 (value ,(doctor-category t))
@@ -199,7 +185,7 @@
                                                            
                                                            (td (div ((style "font-weight:bold")(id ,(string-append "timer_" (mongo-dict-ref t 'starttime)))) " ")))
                                                        (script ((type "text/javascript"))
-                                                               (string-append "start_timer(" (mongo-dict-ref t 'starttime) ");"))))))
+                                                               ,(string-append "start_timer(" (mongo-dict-ref t 'starttime) ");"))))))
                                   (div ((style "min-height:430px")(id "cal"))"")
                                   (div ((style "min-height:430px")(id "datatable"))
                                        (div ((id "pg")) " ")
@@ -300,6 +286,42 @@
                  (- endtime starttime))))
       (real->decimal-string (/ (/ (/ total-seconds 1000) 60) 60)))))
 
+
+(define get-tasks-with-date
+  (lambda (req)
+    (let* (( bindings (request-bindings req))
+           (month (extract-binding/single 'month bindings))
+           (day (extract-binding/single 'day bindings))
+           (year (extract-binding/single 'year bindings))
+           (start-of-day (* 1000(find-seconds 0 0 0 (string->number day)
+                                              (string->number month)(string->number year))))
+           (end-of-day (* 1000 (find-seconds 59 59 23 (string->number day)
+                                             (string->number month)(string->number year))))
+           (task-match (mongo-dict-query
+                        "task"
+                        (make-hasheq
+                         (list (cons 'username (current-username req)))))))
+      (response/xexpr
+       `(tasks
+         ,@(for/list ((t (mongo-dict-query "task" (hasheq))))
+             (if (and (> (string->number (task-starttime t)) start-of-day)
+                      (< (floor(string->number (task-endtime t))) end-of-day))
+                 `(task
+                   (hours ,(calculate-hours (string->number (mongo-dict-ref t 'starttime))
+                                            (string->number (mongo-dict-ref t 'endtime))
+                                            (current-username req)))
+                   (endtime ,(mongo-dict-ref t 'endtime))
+                   (enddate ,(mongo-dict-ref t 'endtime))
+                   (starttime ,(mongo-dict-ref t 'starttime))
+                   (comment ,(mongo-dict-ref t 'comment))
+                   (category ,(mongo-dict-ref t 'category))
+                   (bugnumber ,(mongo-dict-ref t 'bugnumber)))
+                 '()
+                 )
+             );for/list
+         ) ;tasks
+       #:mime-type #"application/xml"))))
+
 (define get-tasks
   (lambda (req)
     (let* ((task-match 
@@ -352,6 +374,7 @@
         ((bindings (request-bindings req))
          (starttime (extract-binding/single 'starttime bindings))
          (category (extract-binding/single 'category bindings))
+         
          (task-match (mongo-dict-query
                       "task"
                       (make-hasheq
@@ -417,24 +440,6 @@
      '(msg "Task created")
      #:mime-type #"application/xml")))
 
-(define update-bugnum
-  (lambda (req)
-    (let*
-        ((bindings (request-bindings req))
-         (starttime (extract-binding/single 'starttime bindings))
-         (bugnumber (extract-binding/single 'bugnumber bindings))
-         (task-match (mongo-dict-query
-                      "task"
-                      (make-hasheq
-                       (list (cons 'starttime starttime))))))
-      (for/list ((t (mongo-dict-query "task" (hasheq))))
-        (if (equal? (task-starttime t) starttime)
-            (set-task-bugnumber! t bugnumber)
-            '())))
-    (response/xexpr
-     '(msg "Bug Number Updated")
-     #:mime-type #"application/xml")))
-
 (define validate-user
   (lambda (req)
     (cond
@@ -484,7 +489,7 @@
              (head (title "Task Timer")
                    (script ((type "text/javascript")(src "jquery-1.7.1.min.js")) " ")
                    (link ((href "http://fonts.googleapis.com/css?family=Geostar+Fill") (rel "stylesheet") (type "text/css"))" ")
-		   (link ((type "text/css")(rel "stylesheet")(href "tasktimer.css")) " ")
+                   (link ((type "text/css")(rel "stylesheet")(href "tasktimer.css")) " ")
                    (script ((type "text/javascript")(src "tasktimer.js"))" "))
              (body ((link "#000000")(bgcolor "#228B22"))
                    (div ((id "center_content"))
@@ -556,10 +561,10 @@
    (("save-task") save-task)
    (("create-task") create-task)
    (("get-tasks") get-tasks)
+   (("get-tasks-with-date") get-tasks-with-date)
    (("get-paused-time") get-paused-time)
    (("validate-new-user") validate-new-user)
    (("validate-user") validate-user)
-   (("update-bugnum") update-bugnum)
    (("update-category") update-category)
    (("update-comment") update-comment)
    (("update-endtime") update-endtime)
