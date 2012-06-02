@@ -314,8 +314,7 @@
                    (enddate ,(mongo-dict-ref t 'endtime))
                    (starttime ,(mongo-dict-ref t 'starttime))
                    (comment ,(mongo-dict-ref t 'comment))
-                   (category ,(mongo-dict-ref t 'category))
-                   (bugnumber ,(mongo-dict-ref t 'bugnumber)))
+                   (category ,(mongo-dict-ref t 'category)))
                  '()
                  )
              );for/list

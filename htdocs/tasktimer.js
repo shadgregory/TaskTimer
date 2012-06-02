@@ -432,7 +432,7 @@ function init() {
 			  type: "GET",
 			  url: "get-tasks-with-date",
 			  dataType: "xml",
-			  data: "month=" + month + "&day="+day+"&year="+year,
+			  data: "month=" + month + "&day="+day.trim()+"&year="+year,
 			  success: function(xml) {
 			      $(xml).find('tasks').each(function(){
 				  $(this).find('task').each(function(){
