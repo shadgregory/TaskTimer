@@ -293,7 +293,8 @@
            (month (extract-binding/single 'month bindings))
            (day (extract-binding/single 'day bindings))
            (year (extract-binding/single 'year bindings))
-           (start-of-day (* 1000(find-seconds 0 0 0 (string->number day)
+           (start-of-day (* 1000(find-seconds 0 0 0 
+					      (string->number day)
                                               (string->number month)(string->number year))))
            (end-of-day (* 1000 (find-seconds 59 59 23 (string->number day)
                                              (string->number month)(string->number year))))
@@ -304,8 +305,11 @@
       (response/xexpr
        `(tasks
          ,@(for/list ((t (mongo-dict-query "task" (hasheq))))
-             (if (and (> (string->number (task-starttime t)) start-of-day)
-                      (< (floor(string->number (task-endtime t))) end-of-day))
+             (if (and 
+		  (string? (task-starttime t))
+		  (string? (task-endtime t))
+		  (> (string->number (task-starttime t)) start-of-day)
+		  (< (floor (string->number (task-endtime t))) end-of-day))
                  `(task
                    (hours ,(calculate-hours (string->number (mongo-dict-ref t 'starttime))
                                             (string->number (mongo-dict-ref t 'endtime))
