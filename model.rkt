@@ -6,6 +6,7 @@
    (bugnumber)
    (category)
    (comment)
+   (_id)
    (in-progress)
    (starttime #:required)
    (endtime)))

@@ -294,7 +294,7 @@
            (day (extract-binding/single 'day bindings))
            (year (extract-binding/single 'year bindings))
            (start-of-day (* 1000(find-seconds 0 0 0 
-					      (string->number day)
+                                              (string->number day)
                                               (string->number month)(string->number year))))
            (end-of-day (* 1000 (find-seconds 59 59 23 (string->number day)
                                              (string->number month)(string->number year))))
@@ -306,10 +306,10 @@
        `(tasks
          ,@(for/list ((t (mongo-dict-query "task" (hasheq))))
              (if (and 
-		  (string? (task-starttime t))
-		  (string? (task-endtime t))
-		  (> (string->number (task-starttime t)) start-of-day)
-		  (< (floor (string->number (task-endtime t))) end-of-day))
+                  (string? (task-starttime t))
+                  (string? (task-endtime t))
+                  (> (string->number (task-starttime t)) start-of-day)
+                  (< (floor (string->number (task-endtime t))) end-of-day))
                  `(task
                    (hours ,(calculate-hours (string->number (mongo-dict-ref t 'starttime))
                                             (string->number (mongo-dict-ref t 'endtime))
@@ -351,6 +351,7 @@
                  (enddate ,(mongo-dict-ref t 'endtime))
                  (starttime ,(mongo-dict-ref t 'starttime))
                  (comment ,(mongo-dict-ref t 'comment))
+		 (_id ,(bson-objectid->string (mongo-dict-ref t '_id)))
                  (category ,(mongo-dict-ref t 'category))))))
        #:mime-type #"application/xml"))))
 
@@ -541,7 +542,31 @@
                       (make-hasheq
                        (list (cons 'starttime starttime))))))
       (for/list ((t (mongo-dict-query "task" (hasheq))))
-        (if (equal? (task-starttime t) starttime)
+	(if (equal? (task-starttime t) starttime)
+            (begin
+              (set-task-endtime! t endtime)
+              (set-task-category! t category)
+              (set-task-comment! t comment)
+              (set-task-in-progress! t 0)
+              (set-task-username! t (current-username req)))
+            '())))
+    (response/xexpr
+     '(msg "Task saved."))))
+
+(define save-new-task
+  (lambda (req)
+    (define bindings (request-bindings req))
+    (let*
+        ((comment (extract-binding/single 'comment bindings))
+         (endtime (extract-binding/single 'endtime bindings))
+         (category (extract-binding/single 'category bindings))
+         (starttime (extract-binding/single 'starttime bindings))
+         (task-match (mongo-dict-query
+                      "task"
+                      (make-hasheq
+                       (list (cons 'starttime starttime))))))
+      (for/list ((t (mongo-dict-query "task" (hasheq))))
+	(if (equal? (task-starttime t) starttime)
             (begin
               (set-task-endtime! t endtime)
               (set-task-category! t category)

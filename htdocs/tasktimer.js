@@ -70,7 +70,7 @@ function add_row(table_id, cat_value, hours_value, note_value, verified, yui2) {
     var notescontr = document.createElement("div");
     notescontr.id = "notescontainer" + lastRow;
     var catinput = document.createElement("input"); 
-    catinput.type="text";
+    catinput.type = "text";
     catinput.name = "category" + lastRow;
     catinput.id = "category" + lastRow;
     catinput.value = cat_value;
@@ -419,9 +419,44 @@ function init() {
      		      var addBlankRow = function() {
 			  add_row("tbody-"+month+day+year,"","","","","",yui2); 
 		      };
+		      var saveTasks = function() {
+			  var tbod = document.getElementById('tbody-'+month+day+year);
+			  var cat_array = getElementsByRegExpId(/^category/i, document, "input");
+			  var hours_array = getElementsByRegExpId(/^hours/i, document, "input");
+			  var notes_array = getElementsByRegExpId(/^note/i, document, "input");
+			  var begin_date = new Date(year, month, day, 0, 0, 0, 0);
+			  for (var i = 0;i<cat_array.length;i++) {
+			      var end_date = new Date(year, month, day, hours_array[i].value, 0, 0, 0);
+			      $.ajax({
+				  url: "save-task"
+				  ,context: document.body
+				  ,data:
+				  "comment=" + encodeURIComponent(notes_array[i].value) +
+				      "&category=" + encodeURIComponent(cat_array[i].value) +
+				      "&starttime=" + begin_date.getTime() +
+				      "&endtime=" + end_date.getTime() +
+				      "&new=1"
+				  ,success: cal_dialog.hide()
+			      });
+			  }
+			  /*
+			  $.ajax({
+			      url: "save-task",
+			      context: document.body,
+			      data:
+			      "comment=" + encodeURIComponent($("#comment_" + st).val()) +
+				  "&category=" + encodeURIComponent($("#auto_cat" + st).val()) +
+				  "&starttime=" + $("#starttime_" + st).val() +
+				  "&endtime=" + d.getTime()
+			  });
+
+			   $('#tbody-'+month+day+year).find('tr').each(function() {
+			   });
+			  */
+		      };
 		      var myButtons = [
 			  {text: "Add Task", handler: addBlankRow, isDefault:true},
-			  {text: "Save"},
+			  {text: "Save", handler: saveTasks},
 			  {text: "Cancel", handler: function(){cal_dialog.hide();}}
 		      ];
 		      cal_dialog.cfg.queueProperty("buttons", myButtons);
