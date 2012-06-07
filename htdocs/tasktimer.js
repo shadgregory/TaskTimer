@@ -3,6 +3,24 @@ var timer_hash = new Object();
 var paused_hash = new Object();
 var begin_paused_hash = new Object();
 var categoryArray =  ['QA (R&D)','QA (Support)','R&D','R&D Planning','R&D Documentation','Lunch','IT','TEST','Meeting'];
+String.prototype.trim = function() {
+	return this.replace(/^\s+|\s+$/g,"");
+}         
+
+function suppressNonNumericInput(event){
+
+    if( !(event.keyCode == 8                                // backspace
+          || event.keyCode == 46                              // delete
+          || (event.keyCode >= 35 && event.keyCode <= 40)     // arrow keys/home/end
+	  || event.keyCode == 190 || event.keyCode == 188 
+	  || event.keyCode == 109 || event.keyCode == 110 
+          || (event.keyCode >= 48 && event.keyCode <= 57)     // numbers on keyboard
+          || (event.keyCode >= 96 && event.keyCode <= 105))   // number on keypad
+      ) {
+            event.preventDefault();     // Prevent character input
+    }
+}
+
 function cmp_passwords () {
     if ($('#new_password').val() == $('#new_password2').val()){
 	    return true;
@@ -40,7 +58,7 @@ function update_cat (st) {
     });
 }
 
-function add_row(table_id, cat_value, hours_value, note_value, verified, yui2) {
+function add_row(table_id, cat_value, hours_value, note_value, verified, yui2, bsonid_value) {
     var tb = document.getElementById(table_id);
     var lastRow = tb.rows.length; 
     var row = tb.insertRow(lastRow); 
@@ -75,6 +93,13 @@ function add_row(table_id, cat_value, hours_value, note_value, verified, yui2) {
     catinput.id = "category" + lastRow;
     catinput.value = cat_value;
     catDiv.appendChild(catinput);
+    if (bsonid_value) {
+	var bsonid = document.createElement("input");
+	bsonid.type = "hidden";
+	bsonid.id = "bsonid" + lastRow;
+	bsonid.value = bsonid_value;
+	catDiv.appendChild(bsonid);
+    }
     catDiv.appendChild(catcontr);
     catcell.appendChild(catDiv);
     var notescell = row.insertCell(2); 
@@ -82,6 +107,7 @@ function add_row(table_id, cat_value, hours_value, note_value, verified, yui2) {
     var hoursinput = document.createElement("input"); 
     var notesinput = document.createElement("input"); 
     hoursinput.type = "text"; 
+    hoursinput.onkeydown = suppressNonNumericInput;
     notesinput.type = "text"; 
     hoursinput.name = "hours" + lastRow;
     notesinput.name = "note" + lastRow;
@@ -89,6 +115,7 @@ function add_row(table_id, cat_value, hours_value, note_value, verified, yui2) {
     notesinput.id = "note" + lastRow;
     hoursinput.value = hours_value;
     hoursinput.size = 4;
+    hoursinput.className += " numberinput";
     notesinput.value = note_value;
     hcDiv.appendChild(hoursinput);
     hcDiv.appendChild(hourscontr);
@@ -287,16 +314,22 @@ function add_task() {
 	context: document.body,
 	data: "starttime=" + $("#starttime_" + d.getTime()).val() + 
 	    "&in-progress=1",
-	success: function() {}
+	success: function(xml) {
+	    $(xml).find('task').each(function(){
+		var bsonid_value = $(this).find('bsonid').text();
+		var tr_el = document.getElementById('task_'+ d.getTime());
+		var bsonid = document.createElement("input");
+		bsonid.type = "hidden";
+		bsonid.id = "bsonid_" + d.getTime();
+		bsonid.value = bsonid_value;
+		tr_el.appendChild(bsonid);
+	    });
+	}
     });
 }
 
 function end_task(st) {
     var d = new Date();
-    if($("#bug_num_"+st).val() == "" && $("#comment_"+st).val() == "") {
-    	alert("Either bug number or comment is required.");
-    	return false;
-    }
     if($("#auto_cat" + st).val() == "") {
         alert("Category is required.");
         return false;
@@ -309,6 +342,7 @@ function end_task(st) {
 	    "comment=" + encodeURIComponent($("#comment_" + st).val()) +
 	    "&category=" + encodeURIComponent($("#auto_cat" + st).val()) +
 	    "&starttime=" + $("#starttime_" + st).val() +
+	    "&bsonid=" + $("#bsonid_" + st).val() +
 	    "&endtime=" + d.getTime(),
 	success: function() {
 	    $('#task_' + st).remove();
@@ -424,35 +458,27 @@ function init() {
 			  var cat_array = getElementsByRegExpId(/^category/i, document, "input");
 			  var hours_array = getElementsByRegExpId(/^hours/i, document, "input");
 			  var notes_array = getElementsByRegExpId(/^note/i, document, "input");
-			  var begin_date = new Date(year, month, day, 0, 0, 0, 0);
+			  var bsonid_array = getElementsByRegExpId(/^bsonid/i, document, "input");
+			  var begin_date = new Date(year, (month - 1), day);
 			  for (var i = 0;i<cat_array.length;i++) {
-			      var end_date = new Date(year, month, day, hours_array[i].value, 0, 0, 0);
+			      var hours = Math.floor(hours_array[i].value);
+			      var min = Math.floor((hours_array[i].value - hours) * 60);
+			      var sec = (hours_array[i].value * 3600) % 60 % 60;
+			      var end_date = new Date(year, (month - 1), day, hours, min, sec, 0);
+			      var data_string = "comment=" + encodeURIComponent(notes_array[i].value) +
+				  "&category=" + encodeURIComponent(cat_array[i].value) +
+				  "&hours=" + hours_array[i].value + 
+				  "&starttime=" + begin_date.getTime() +
+				  "&endtime=" + end_date.getTime();
+			      if (bsonid_array[i].value.trim() != "[object Object]")
+				  data_string = data_string.concat("&bsonid=" + bsonid_array[i].value);
 			      $.ajax({
 				  url: "save-task"
 				  ,context: document.body
-				  ,data:
-				  "comment=" + encodeURIComponent(notes_array[i].value) +
-				      "&category=" + encodeURIComponent(cat_array[i].value) +
-				      "&starttime=" + begin_date.getTime() +
-				      "&endtime=" + end_date.getTime() +
-				      "&new=1"
+				  ,data: data_string
 				  ,success: cal_dialog.hide()
 			      });
 			  }
-			  /*
-			  $.ajax({
-			      url: "save-task",
-			      context: document.body,
-			      data:
-			      "comment=" + encodeURIComponent($("#comment_" + st).val()) +
-				  "&category=" + encodeURIComponent($("#auto_cat" + st).val()) +
-				  "&starttime=" + $("#starttime_" + st).val() +
-				  "&endtime=" + d.getTime()
-			  });
-
-			   $('#tbody-'+month+day+year).find('tr').each(function() {
-			   });
-			  */
 		      };
 		      var myButtons = [
 			  {text: "Add Task", handler: addBlankRow, isDefault:true},
@@ -474,7 +500,8 @@ function init() {
 				      var category = $(this).find('category').text();
 				      var comment = $(this).find('comment').text();
 				      var hours = $(this).find('hours').text();
-				      add_row('table-'+month+day+year,category,hours,comment,false,yui2);
+				      var bsonid = $(this).find('bsonid').text();
+				      add_row('table-'+month+day+year,category,hours,comment,false,yui2,bsonid);
 				  });
 			      });
 			  }

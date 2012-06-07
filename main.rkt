@@ -12,6 +12,7 @@
          racket/date
          file/md5
          xml
+         srfi/13
          "model.rkt"
          web-server/servlet-env)
 (require (planet "main.rkt" ("jaymccarthy" "mongodb.plt" 1 12)))
@@ -162,6 +163,10 @@
                                                          ((id ,(string-append "starttime_" (mongo-dict-ref t 'starttime)))
                                                           (value ,(mongo-dict-ref t 'starttime))
                                                           (type "hidden")))
+                                                        (input 
+                                                         ((id ,(string-append "bsonid_" (bson-objectid->string (mongo-dict-ref t '_id))))
+                                                          (value ,(bson-objectid->string (mongo-dict-ref t '_id)))
+                                                          (type "hidden")))
                                                         (input ((type "text")
                                                                 (id ,(string-append "auto_cat" (mongo-dict-ref t 'starttime)))
                                                                 (onchange ,(string-append "update_cat(" (mongo-dict-ref t 'starttime) ")"))
@@ -308,7 +313,7 @@
              (if (and 
                   (string? (task-starttime t))
                   (string? (task-endtime t))
-                  (> (string->number (task-starttime t)) start-of-day)
+                  (>= (string->number (task-starttime t)) start-of-day)
                   (< (floor (string->number (task-endtime t))) end-of-day))
                  `(task
                    (hours ,(calculate-hours (string->number (mongo-dict-ref t 'starttime))
@@ -317,6 +322,7 @@
                    (endtime ,(mongo-dict-ref t 'endtime))
                    (enddate ,(mongo-dict-ref t 'endtime))
                    (starttime ,(mongo-dict-ref t 'starttime))
+                   (bsonid , (bson-objectid->string(mongo-dict-ref t '_id)))
                    (comment ,(mongo-dict-ref t 'comment))
                    (category ,(mongo-dict-ref t 'category)))
                  '()
@@ -351,7 +357,7 @@
                  (enddate ,(mongo-dict-ref t 'endtime))
                  (starttime ,(mongo-dict-ref t 'starttime))
                  (comment ,(mongo-dict-ref t 'comment))
-		 (_id ,(bson-objectid->string (mongo-dict-ref t '_id)))
+                 (bsonid ,(bson-objectid->string (mongo-dict-ref t '_id)))
                  (category ,(mongo-dict-ref t 'category))))))
        #:mime-type #"application/xml"))))
 
@@ -435,13 +441,15 @@
     (define bindings (request-bindings req))
     (let*
         ((starttime (extract-binding/single 'starttime bindings))
-         (username (current-username req)))
-      (make-task #:username username
-                 #:in-progress 1
-                 #:starttime starttime))
-    (response/xexpr
-     '(msg "Task created")
-     #:mime-type #"application/xml")))
+         (username (current-username req))
+         (t (make-task #:username username
+                       #:in-progress 1
+                       #:starttime starttime)))
+      (response/xexpr
+       `(task
+         (bsonid ,(bson-objectid->string (task-_id t)))
+         (msg "Task created"))
+       #:mime-type #"application/xml"))))
 
 (define validate-user
   (lambda (req)
@@ -531,25 +539,38 @@
 
 (define save-task
   (lambda (req)
+    (display "calling save-task")
+    (newline)
     (define bindings (request-bindings req))
     (let*
         ((comment (extract-binding/single 'comment bindings))
          (endtime (extract-binding/single 'endtime bindings))
          (category (extract-binding/single 'category bindings))
          (starttime (extract-binding/single 'starttime bindings))
+         (found-task #f)
          (task-match (mongo-dict-query
                       "task"
                       (make-hasheq
                        (list (cons 'starttime starttime))))))
-      (for/list ((t (mongo-dict-query "task" (hasheq))))
-	(if (equal? (task-starttime t) starttime)
-            (begin
-              (set-task-endtime! t endtime)
-              (set-task-category! t category)
-              (set-task-comment! t comment)
-              (set-task-in-progress! t 0)
-              (set-task-username! t (current-username req)))
-            '())))
+      (if (exists-binding? 'bsonid bindings) 
+          (for/list ((t (mongo-dict-query "task" (hasheq))))           
+            (if (equal? (string-trim-both(bson-objectid->string (task-_id t))) (extract-binding/single 'bsonid bindings))              
+                (begin
+                  (set! found-task #t)
+                  (set-task-starttime! t starttime)
+                  (set-task-endtime! t endtime)
+                  (set-task-category! t category)
+                  (set-task-comment! t comment)
+                  (set-task-in-progress! t 0)
+                  (set-task-username! t (current-username req)))
+                '())
+            )
+          (make-task #:username (current-username req)
+                     #:in-progress 0
+                     #:comment comment
+                     #:category category
+                     #:endtime endtime
+                     #:starttime starttime)))
     (response/xexpr
      '(msg "Task saved."))))
 
@@ -566,7 +587,7 @@
                       (make-hasheq
                        (list (cons 'starttime starttime))))))
       (for/list ((t (mongo-dict-query "task" (hasheq))))
-	(if (equal? (task-starttime t) starttime)
+        (if (equal? (task-starttime t) starttime)
             (begin
               (set-task-endtime! t endtime)
               (set-task-category! t category)
