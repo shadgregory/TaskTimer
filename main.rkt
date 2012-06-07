@@ -401,13 +401,14 @@
     (let*
         ((bindings (request-bindings req))
          (starttime (extract-binding/single 'starttime bindings))
+         (bsonid (extract-binding/single 'bsonid bindings))
          (hours (extract-binding/single 'hours bindings))
          (task-match (mongo-dict-query
                       "task"
                       (make-hasheq
-                       (list (cons 'starttime starttime))))))
+                       (list (cons 'starttime starttime)(cons 'username (current-username req)))))))
       (for/list ((t (mongo-dict-query "task" (hasheq))))
-        (if (equal? (task-starttime t) starttime)
+        (if (equal? (string-trim-both (bson-objectid->string (task-_id t))) bsonid)
             (set-task-endtime! t 
                                (number->string 
                                 (+ (* (string->number hours) 3600000) 

@@ -524,7 +524,7 @@ function init() {
 		  dataSource.responseType = yui2.util.XHRDataSource.TYPE_XML;
 		  dataSource.responseSchema = { 
 		      resultNode: "task", 
-		      fields: ["bugnumber","category","comment","hours","starttime","enddate"]
+		      fields: ["bugnumber","category","comment","hours","starttime","enddate","bsonid"]
 		  };
 		  dataSource.connMethodPost = true; 
 		  yui2.widget.DataTable.formatDate = function(el, oRecord, oColumn, oData) {
@@ -544,6 +544,7 @@ function init() {
 			  url: "update-endtime",
 			  context: document.body,
 			  data: "starttime=" + args.editor.getRecord().getData().starttime +
+			      "&bsonid=" + args.editor.getRecord().getData().bsonid +
 			      "&hours=" + args.newData
 		      });
 		  });
@@ -555,12 +556,12 @@ function init() {
 		      {key:"hours", sortable:true, resizeable:true, 
 		       editor: ttTextboxCellEditor,
 		       locator:"*[local-name()='hours']",label:"Hours"},
-                      {key:"starttime",locator:"[local-name()='starttime']"},
-		      {key:"enddate",  sortable:true, resizeable:true, 
-		       locator:"*[local-name()='enddate']",
+                      {key:"starttime",locator:"[local-name()='starttime']",
 		       formatter:yui2.widget.DataTable.formatDate,
+		       sortable:true, resizeable:true,
 		       parser: 'date',
-		       label:"End Date"}
+		       label:"Date"},
+		      {key:"bsonid",locator:"*[local-name()='bsonid']"}
 		  ];
 		  var table = new yui2.widget.DataTable(
 		      "all-tasks", 
