@@ -123,11 +123,18 @@ function add_row(table_id, cat_value, hours_value, note_value, verified, yui2, b
     noteDiv.appendChild(notescontr);
     hourscell.appendChild(hcDiv);
     notescell.appendChild(noteDiv);
-    /*
-    var catAutoComp = new yui2.widget.AutoComplete("category"+lastRow,"categorycontainer"+lastRow, categoryArray);
-    catAutoComp.typeAhead = true;
-    catAutoComp.queryMatchContains = true;
-    */
+    YUI().use('event', 'autocomplete', 'autocomplete-highlighters', function(Y) {
+	Y.Event.onAvailable('#category' + lastRow, function(e) {
+	    Y.one('#category' + lastRow).plug(Y.Plugin.AutoComplete, {
+		resultHighlighter: 'phraseMatch',
+		source: categoryArray,
+		on : {
+		    select : function(e) {
+		    }
+		}
+	    });
+	});
+    });
     if (verified) {
 	notesinput.disabled = true;
 	hoursinput.disabled = true;
