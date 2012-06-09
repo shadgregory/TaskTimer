@@ -28,8 +28,14 @@ img.title:hover span{ /*the span will display just on :hover state*/
     width:700px;
 }
 
-h1#title {
-    font-family: 'Geostar Fill',cursive;
+@font-face {
+	font-family: dynalight;
+	src: url('Dynalight-Regular.ttf');
+}
+
+@font-face {
+	font-family: titan;
+	src: url('TitanOne-Regular.ttf');
 }
 
 .header {
@@ -43,5 +49,4 @@ h1#title {
     background-image:url(brownish.png);
     background-repeat:repeat;
 }
-
 
