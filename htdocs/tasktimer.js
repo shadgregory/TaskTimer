@@ -556,7 +556,7 @@ function init() {
 		      {key:"hours", sortable:true, resizeable:true, 
 		       editor: ttTextboxCellEditor,
 		       locator:"*[local-name()='hours']",label:"Hours"},
-                      {key:"starttime",locator:"[local-name()='starttime']",
+                      {key:"enddate",locator:"[local-name()='enddate']",
 		       formatter:yui2.widget.DataTable.formatDate,
 		       sortable:true, resizeable:true,
 		       parser: 'date',

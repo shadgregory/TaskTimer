@@ -101,7 +101,7 @@
           (response/xexpr
            `(html
              (head
-              (title ,(string-append "Task Timer - " username))
+              (title ,(string-append "Tommy Windich - " username))
               (link ((type "text/css")(rel "stylesheet")(href "fonts-min.css"))" ")
               (link ((type "text/css")(rel "stylesheet")(href "tasktimer.css")) " ")
               (link ((href "http://fonts.googleapis.com/css?family=Geostar+Fill") (rel "stylesheet") (type "text/css"))" ")
@@ -120,7 +120,7 @@
                                   (tr
                                    (td (img ((src "tasktimer.png")(width "128")(height "128"))))
                                    (td
-                                    (h1 ((id "title"))"Task Timer"))
+                                    (h1 ((id "title") (style "font-family:titan,cursive"))"Tommy Windich"))
                                    (td ((style "width:300px;text-align:right;vertical-align:bottom;"))
                                        (a ((href "#")(onclick "logout();")) "Logout")))))))
                           (tr
@@ -235,10 +235,11 @@
     new?))
 
 (define insert-new-user
-  (lambda (username password)
+  (lambda (username password cookieid)
     (cond 
       ((new-user? username)
        (make-user #:username username
+                  #:cookieid cookieid
                   #:password (md5 password))
        #t)
       (else
@@ -298,9 +299,9 @@
            (month (extract-binding/single 'month bindings))
            (day (extract-binding/single 'day bindings))
            (year (extract-binding/single 'year bindings))
-           (start-of-day (* 1000(find-seconds 0 0 0 
-                                              (string->number day)
-                                              (string->number month)(string->number year))))
+           (start-of-day (* 1000 (find-seconds 0 0 0 
+                                               (string->number day)
+                                               (string->number month)(string->number year))))
            (end-of-day (* 1000 (find-seconds 59 59 23 (string->number day)
                                              (string->number month)(string->number year))))
            (task-match (mongo-dict-query
@@ -473,12 +474,15 @@
 
 (define validate-new-user
   (lambda (req)
-    (let ((data-list (formlet-process new-user-formlet req)))
+    (let ((data-list (formlet-process new-user-formlet req))
+          (cookieid (number->string (random 4294967087))))
       (cond
+        ((< (string-length (second data-list)) 8)
+         (redirect-to "/?msg=tooshort"))
         ((string=? (second data-list)(third data-list))
          (cond
-           ((insert-new-user (car data-list) (second data-list))
-            (define id-cookie (make-cookie "id" (car data-list) #:secure? #t))
+           ((insert-new-user (car data-list) (second data-list) cookieid)
+            (define id-cookie (make-cookie "id" (string-append (car data-list) "-" cookieid) #:secure? #t))
             (redirect-to "timer" #:headers (list (cookie->header id-cookie))))
            (else
             (redirect-to "/?msg=notnew"))))
@@ -498,9 +502,8 @@
         (begin
           (response/xexpr
            `(html
-             (head (title "Task Timer")
+             (head (title "Tommy Windich")
                    (script ((type "text/javascript")(src "jquery-1.7.1.min.js")) " ")
-                   (link ((href "http://fonts.googleapis.com/css?family=Geostar+Fill") (rel "stylesheet") (type "text/css"))" ")
                    (link ((type "text/css")(rel "stylesheet")(href "tasktimer.css")) " ")
                    (script ((type "text/javascript")(src "tasktimer.js"))" "))
              (body ((link "#000000")(bgcolor "#228B22"))
@@ -512,7 +515,9 @@
                                 (img ((src "tasktimer.png")
                                       (width "128")(height "128"))))
                                (td
-                                (h1 "Task Timer")))))
+                                (h1 ((style "font-family:titan,cursive")) "Tommy Windich"))
+                               (td ((style "text-align:right;vertical-align:bottom;"))
+                                   (h3 ((style "font-family:dynalight;"))"Time tracking made easy...")))))
                         (div ((style "border:1px solid black;background:#99CCFF;padding-top:5px;padding-left:5px;"))
                              (div ((id "message_div") (style "color:red;")) 
                                   ,(cond
@@ -520,6 +525,8 @@
                                       "Please choose another user name.")
                                      ((string=? msg "nomatch")
                                       "Your passwords did not match.")
+                                     ((string=? msg "tooshort")
+                                      "Passwords must be at least 8 characters.")
                                      ((string=? msg "baduser")
                                       "Login failed.")
                                      (else
