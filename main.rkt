@@ -627,15 +627,39 @@
    (("unpause") unpause)
    (("timer") timer-page)))
 
-(serve/servlet start
+(define s1
+  (thread
+   (lambda ()
+           (serve/servlet
+       	   (lambda (req)
+                   (redirect-to
+                    (url->string
+                     (struct-copy url (request-uri req)
+                                  [scheme "https"]
+						    	  [host "tommywindich.com"]
+                                  [port 443]))))
+           #:port 80
+           #:listen-ip #f
+           #:quit? #f
+           #:ssl? #f
+           #:launch-browser? #f
+           #:servlet-regexp #rx""))))
+
+(define s2
+  (thread
+	(lambda ()
+		(serve/servlet start
                #:launch-browser? #f
                #:quit? #f
                #:ssl? #t
                #:listen-ip #f
-               #:port 8081
-               #:ssl-cert (build-path "." "server-cert.pem")
-               #:ssl-key (build-path "." "private-key.pem")
+               #:port 443
+               #:ssl-cert (build-path "/etc/ssl/localcerts" "combined.crt")
+               #:ssl-key (build-path "/etc/ssl/localcerts" "www.tommywindich.com.key")
                #:servlet-regexp #rx""
                #:extra-files-paths (list 
                                     (build-path "./htdocs"))
-               #:servlet-path "/main.rkt")
+               #:servlet-path "/main.rkt"))))
+
+(thread-wait s1)
+(thread-wait s2)
