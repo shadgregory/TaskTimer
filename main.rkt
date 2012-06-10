@@ -16,7 +16,6 @@
          "model.rkt"
          web-server/servlet-env)
 (require (planet "main.rkt" ("jaymccarthy" "mongodb.plt" 1 12)))
-(require (planet "main.ss" ("dherman" "json.plt" 3 0)))
 
 (define m (create-mongo))
 (define d (make-mongo-db m "tasktimer"))
@@ -105,7 +104,8 @@
               (link ((type "text/css")(rel "stylesheet")(href "fonts-min.css"))" ")
               (link ((type "text/css")(rel "stylesheet")(href "tasktimer.css")) " ")
               (script ((type "text/javascript")(src "tasktimer.js")) " ")
-              (script ((src "yui-min.js")(charset "utf-8"))" ")
+              (script ((src "yui/build/yui/yui.js")(charset "utf-8"))" ")
+              (script ((src "yui/build/loader/loader.js")(charset "utf-8"))" ")
               (script ((type "text/javascript")(src "jquery-1.7.1.min.js")) " "))
              
              (body ((link "#000000")(alink "#000000")(vlink "#000000")
