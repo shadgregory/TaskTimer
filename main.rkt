@@ -104,7 +104,6 @@
               (title ,(string-append "Tommy Windich - " username))
               (link ((type "text/css")(rel "stylesheet")(href "fonts-min.css"))" ")
               (link ((type "text/css")(rel "stylesheet")(href "tasktimer.css")) " ")
-              (link ((href "http://fonts.googleapis.com/css?family=Geostar+Fill") (rel "stylesheet") (type "text/css"))" ")
               (script ((type "text/javascript")(src "tasktimer.js")) " ")
               (script ((src "yui-min.js")(charset "utf-8"))" ")
               (script ((type "text/javascript")(src "jquery-1.7.1.min.js")) " "))
