@@ -1,11 +1,23 @@
+Array.prototype.unique = function() {
+    var a = [];
+    var l = this.length;
+    for(var i=0; i<l; i++) {
+	for(var j=i+1; j<l; j++) {
+	    if (this[i] === this[j])
+		j = ++i;
+	}
+	a.push(this[i]);
+    }
+    return a;
+};
+String.prototype.trim = function() {
+    return this.replace(/^\s+|\s+$/g,"");
+}         
 var current_st = "";
 var timer_hash = new Object();
 var paused_hash = new Object();
 var begin_paused_hash = new Object();
-var categoryArray =  ['QA (R&D)','QA (Support)','R&D','R&D Planning','R&D Documentation','Lunch','IT','TEST','Meeting'];
-String.prototype.trim = function() {
-	return this.replace(/^\s+|\s+$/g,"");
-}         
+var categoryArray = new Array();
 
 function suppressNonNumericInput(event){
 
@@ -25,7 +37,7 @@ function cmp_passwords () {
     if ($('#new_password').val() == $('#new_password2').val()){
 	    return true;
     } else {
-	    $('#message_div').html("The passwords do not match.");
+	    $('#message_div').html("The passwords dpo not match.");
 	    return false;
     }
 }
@@ -396,6 +408,30 @@ function addNewRule(ruleSet, path, ruleName) {
 }
 
 function init() {
+    YUI_config = {
+	combine: false,
+	filter: "raw",
+	comboBase: "/combo?",
+	base: '/yui/build/',
+	root: 'yui/build/',
+	groups:{
+	    yui2:{
+		base: '/2in3/dist/build/',
+		patterns: {
+		    'yui2-':{
+			configFn: function(me) {
+                            if(/-skin|reset|fonts|grids|base/.test(me.name)) {
+                                me.type = 'css';
+                                me.path = me.path.replace(/\.js/, '.css');
+                                me.path = me.path.replace(/\/yui2-skin/, '/assets/skins/sam/yui2-skin');
+                            }
+                        }
+		    }
+		}
+	    }
+	}
+    };
+
     YUI().use("yui2-datatable",
 	      "yui2-paginator",
 	      "yui2-connection",
@@ -417,9 +453,7 @@ function init() {
 		      Y.Event.onAvailable('#' + id_string, function(e) {
 			  Y.one('#' + id_string).plug(Y.Plugin.AutoComplete, {
 			      resultHighlighter: 'phraseMatch',
-			      source: ['QA (R&D)','QA (Support)','R&D',
-				       'R&D Planning','R&D Documentation',
-				       'Lunch','IT','TEST','Meeting']
+			      source: categoryArray
 			  });
 		      });
 		  }
@@ -593,6 +627,8 @@ function init() {
 				  var rules = {};
 				  $(this).find('task').each(function(){
 				      var enddate = Math.floor($(this).find('enddate').text());
+				      categoryArray.push($(this).find('category').text());
+				      categoryArray = categoryArray.unique();
 				      var d = new Date(enddate);
 				      var y = d.getFullYear();
 				      var m = d.getMonth();
