@@ -21,6 +21,7 @@
   user "user"
   ((username #:required)
    (cookieid)
+   (reportsto)
    (password #:required)))
 
 (provide (all-defined-out))

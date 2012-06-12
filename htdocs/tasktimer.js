@@ -528,7 +528,9 @@ function init() {
 		      ];
 		      cal_dialog.cfg.queueProperty("buttons", myButtons);
 		      cal_dialog.setHeader("Enter time for " + month + "/" + day + "/" + year + ":");
-		      cal_dialog.setBody('<table id="table-'+month+day+year+'"><thead><tr><td></td><td><b>Category</b></td><td><b>Notes</b></td><td><b>Hours</b></td></tr></thead> \
+		      cal_dialog.setBody('<table id="table-'+month+day+year+'"> \
+                                          <thead><tr><td></td><td><b>Category</b> \
+                                          </td><td><b>Notes</b></td><td><b>Hours</b></td></tr></thead> \
                                           <tbody id="tbody-'+month+day+year+'"></tbody></table>');
 		      $.ajax({
 			  type: "GET",
