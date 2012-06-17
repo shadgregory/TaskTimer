@@ -121,6 +121,8 @@
                                    (td
                                     (h1 ((id "title") (style "font-family:titan,cursive"))"Tommy Windich"))
                                    (td ((style "width:300px;text-align:right;vertical-align:bottom;"))
+                                       (a ((href "#") (id "employees_link") (style "display:none;")) "Employees")
+                                       nbsp
                                        (a ((href "#")(onclick "logout();")) "Logout")))))))
                           (tr
                            (td
@@ -330,6 +332,19 @@
              );for/list
          ) ;tasks
        #:mime-type #"application/xml"))))
+
+(define get-employees
+  (lambda (req)
+    (define user-match
+      (mongo-dict-query
+       "user"
+       (make-hasheq
+        (list (cons 'reportsto (current-username req))))))
+    (response/xexpr
+     `(employees
+       ,@(for/list ((u user-match))
+           `(employee
+             ,(mongo-dict-ref u 'username)))))))
 
 (define get-tasks
   (lambda (req)
@@ -616,6 +631,7 @@
    (("get-tasks") get-tasks)
    (("get-tasks-with-date") get-tasks-with-date)
    (("get-paused-time") get-paused-time)
+   (("get-employees") get-employees)
    (("validate-new-user") validate-new-user)
    (("validate-user") validate-user)
    (("update-category") update-category)
@@ -658,7 +674,7 @@
                     #:servlet-regexp #rx""
                     #:extra-files-paths (list 
                                          (build-path "./htdocs"))
-                    #:servlet-path "/main.rkt"))))
+                    #:servlet-path ""))))
 
 (thread-wait s1)
 (thread-wait s2)

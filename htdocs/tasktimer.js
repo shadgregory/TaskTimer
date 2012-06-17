@@ -18,6 +18,7 @@ var timer_hash = new Object();
 var paused_hash = new Object();
 var begin_paused_hash = new Object();
 var categoryArray = new Array();
+var employeeArray = new Array();
 
 function suppressNonNumericInput(event){
 
@@ -619,6 +620,22 @@ function init() {
 		      });
 		      tabview.add(tab);
 		      tabview.render();
+              $.ajax({
+                type: "GET",
+                url: "get-employees",
+                dataType: 'xml',
+                context:document.body,
+                success: function(xml){
+			      $(xml).find('employees').each(function(){
+				    $(this).find('employee').each(function(){
+                        employeeArray.push($(this).find('employee').text());
+                    });
+                  });
+                  alert(employeeArray.length);
+                  if (employeeArray.length > 0)
+                    $("#employees_link").show();
+                }
+              });
 		      $.ajax({
 			    type: "GET",
 			    url: "get-tasks",
