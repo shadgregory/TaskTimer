@@ -360,7 +360,7 @@ function end_task(st) {
 	    "comment=" + encodeURIComponent($("#comment_" + st).val()) +
 	    "&category=" + encodeURIComponent($("#auto_cat" + st).val()) +
 	    "&starttime=" + $("#starttime_" + st).val() +
-	    "&bsonid=" + encodeURIComponent($("#bsonid_" + st).val())g +
+	    "&bsonid=" + encodeURIComponent($("#bsonid_" + st).val()) +
 	    "&endtime=" + d.getTime(),
 	success: function() {
 	    $('#task_' + st).remove();
@@ -431,6 +431,8 @@ function init() {
 	}
     };
 
+
+
     YUI().use("yui2-datatable",
 	      "yui2-paginator",
 	      "yui2-connection",
@@ -473,6 +475,22 @@ function init() {
 		  if (id_value == null) {
 		      window.location = "/";
 		  }
+		  
+		  var update_pending = function(datatable) {
+		      var records = datatable.getRecordSet();
+		      var len = records._records.length-1;
+		      var taskData = new Array();
+		      var url_string = 'verify?';
+		      for (var i=0;i<=len;i++) { 
+			  var rec = records.getRecord(i);
+			  if (rec.getData('Verify')) {
+			      url_string.concat("oid=" + rec.getData('oid'));
+			  }
+		      }  
+		      var transaction = yui2.util.Connect.asyncRequest(
+			  'GET', url_string,
+			  {success:function(o){eval(o.responseText);},failure:function(o){alert(o.responseText);}});
+		  };
 
 		  var calendar = new Y.Calendar({
 		      contentBox: "#cal"
@@ -624,7 +642,6 @@ function init() {
 			  dataType: 'xml',
 			  context:document.body,
 			  success: function(xml){
-			      var tasksArray = new Array();
 			      var tasksObj = new Object();
 			      var dataTable;
 			      var employee_count = 0;
@@ -633,27 +650,27 @@ function init() {
 						      "August","September","October",
 						      "November","December");
 			      //Parse employees xml and populate tasksObj
-			      $(xml).find('employees').each(function(){
-				  $(this).find('employee').each(function(){
-				      employee_count++;
-				      var username = $(this).attr("username");
-				      $(this).find('tasks').each(function(){
-					  $(this).find('task').each(function(){
-					      var verified = false;
-					      if ($(this).find('verified').text() == 'T')
-						  verified = true;
-					      var d = new Date(parseInt($(this).find('endtime').text()));
-					      var y = d.getFullYear();
-					      var m = d.getMonth();
-					      var day = d.getDate();
-					      tasksArray.push({
-						  Hours : $(this).find('hours').text(), 
-						  Date: monthname[m] + " " + day + ", " + y,
-						  Category : $(this).find('category').text(),
-						  Verified : verified
-					      });
+			      $(xml).find('employee').each(function(){
+				  var tasksArray = new Array();
+				  employee_count++;
+				  var username = $(this).attr("username");
+				  $(this).find('tasks').each(function(){
+				      $(this).find('task').each(function(){
+					  var verified = false;
+					  if ($(this).find('verified').text() == 'T')
+					      verified = true;
+					  var d = new Date(parseInt($(this).find('endtime').text()));
+					  var y = d.getFullYear();
+					  var m = d.getMonth();
+					  var day = d.getDate();
+					  tasksArray.push({
+					      Hours : $(this).find('hours').text(), 
+					      Date: monthname[m] + " " + day + ", " + y,
+					      Category : $(this).find('category').text(),
+					      Verified : verified
 					  });
 				      });
+
 				      tasksObj[username] = tasksArray;
 				  });
 			      });
@@ -678,7 +695,12 @@ function init() {
 					  dataTable.render();
 				      }                                                                                                     
 				  };
-				  var first_emp = $('#employee').attr("selectedIndex");
+				  var myArray = new Array();
+				  for (var x in tasksObj) {
+				      myArray.push(x);
+				  }
+				  myArray = myArray.sort();
+				  var first_emp = myArray[0];
 				  var dataSource = new yui2.util.DataSource(tasksObj[first_emp],{
 				      responseType : yui2.util.DataSource.TYPE_JSARRAY,
 				      responseSchema : {
@@ -690,8 +712,8 @@ function init() {
 				  });
 				  var msgPanel = new yui2.widget.SimpleDialog("dlg", {modal:true,fixedcenter:true,draggable:true});
 				  var body_str = "<table><tr><td><select id=employees onchange=\"updateTable(this.options[this.selectedIndex].value)\">";
-				  for (var x in tasksObj) {
-				      body_str += '<option value="'+ x +'">' + x + '</option>';
+				  for (var i=0;i<myArray.length;i++){
+				      body_str += '<option value="'+ myArray[i] +'">' + myArray[i] + '</option>';
 				  }
 				  body_str += "</select></td>";
 				  body_str += "<td style=padding-left:5px><label for=show_verified>Show Verified : </label><input name=show_verified id=show_verified type=checkbox onclick=updateTable(document.getElementById(\"employees\").options[document.getElementById(\"employees\").selectedIndex].value)> </td>";

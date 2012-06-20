@@ -347,28 +347,28 @@
      `(employees
        ,@(for/list ((u user-match))
            `(employee
-	     ((username ,(mongo-dict-ref u 'username)))
-	     (tasks
-	      ,@(for/list ((t (mongo-dict-query 
-			       "task" 
-			       (make-hasheq 
-				(list (cons 'in-progress #f) (cons 'username (mongo-dict-ref u 'username)))))
-			    ))
-		  `(task
-		    (bsonid ,(bson-objectid->string (mongo-dict-ref t '_id)))
-		    (endtime ,(mongo-dict-ref t 'endtime))
-		    (starttime ,(mongo-dict-ref t 'starttime))
-		    (category ,(mongo-dict-ref t 'category))
-		    (hours ,(calculate-hours (string->number (mongo-dict-ref t 'starttime))
-					     (string->number (mongo-dict-ref t 'endtime))
-					     (mongo-dict-ref u 'username)))
-		    (verified ,(boolean->xexpr (mongo-dict-ref t 'verified)))
-		    (comment ,(mongo-dict-ref t 'comment))
-		    );task
-		  );for/list
-	      );tasks
-	     );employee
-	   );for/list
+             ((username ,(mongo-dict-ref u 'username)))
+             (tasks
+              ,@(for/list ((t (mongo-dict-query 
+                               "task" 
+                               (make-hasheq 
+                                (list (cons 'in-progress #f) (cons 'username (mongo-dict-ref u 'username)))))
+                              ))
+                  `(task
+                    (bsonid ,(bson-objectid->string (mongo-dict-ref t '_id)))
+                    (endtime ,(mongo-dict-ref t 'endtime))
+                    (starttime ,(mongo-dict-ref t 'starttime))
+                    (category ,(mongo-dict-ref t 'category))
+                    (hours ,(calculate-hours (string->number (mongo-dict-ref t 'starttime))
+                                             (string->number (mongo-dict-ref t 'endtime))
+                                             (mongo-dict-ref u 'username)))
+                    (verified ,(boolean->xexpr (mongo-dict-ref t 'verified)))
+                    (comment ,(mongo-dict-ref t 'comment))
+                    );task
+                  );for/list
+              );tasks
+             );employee
+           );for/list
        );employees
      #:mime-type #"application/xml")
     ))
@@ -418,6 +418,21 @@
     (response/xexpr
      '(msg "Deleted")
      #:mime-type #"application/xml")))
+
+(define verify
+  (lambda (req)
+    (let*
+        ((bindings (request-bindings req))
+         (username (extract-binding/single 'username bindings))
+         (bsonids  (extract-bindings 'bsonid bindings)))
+      (for/list ((t (mongo-dict-query "task" (make-hasheq
+                                             (list (cons 'username username)
+                                                   (cons 'verified #f))))))
+        (for/list ((bsonid bsonids))
+          (if (equal? (string-trim-both (bson-objectid->string (task-_id t))) 
+                      (string-trim-both bsonid))
+              (set-task-verified! t #t)
+              '()))))))
 
 (define update-category
   (lambda (req)
@@ -593,7 +608,7 @@
         ((comment (extract-binding/single 'comment bindings))
          (endtime (extract-binding/single 'endtime bindings))
          (category (extract-binding/single 'category bindings))
-	 (bsonid (extract-binding/single 'bsonid bindings))
+         (bsonid (extract-binding/single 'bsonid bindings))
          (starttime (extract-binding/single 'starttime bindings))
          (found-task #f)
          (task-match (mongo-dict-query
@@ -602,10 +617,10 @@
                        (list (cons 'starttime starttime))))))
       (if (exists-binding? 'bsonid bindings) 
           (for/list ((t (mongo-dict-query "task" (hasheq))))
-	    (display (string-append "db : "
-				    (bson-objectid->string (task-_id t))))
-	    (display (string-append " binding : " bsonid))
-	    (newline)
+            (display (string-append "db : "
+                                    (bson-objectid->string (task-_id t))))
+            (display (string-append " binding : " bsonid))
+            (newline)
             (if (string=? (string-trim-both (bson-objectid->string (task-_id t))) (string-trim-both bsonid))
                 (begin
                   (set! found-task #t)
@@ -614,13 +629,13 @@
                   (set-task-category! t category)
                   (set-task-comment! t comment)
                   (set-task-in-progress! t #f)
-		  (set-task-verified! t #f)
+                  (set-task-verified! t #f)
                   (set-task-username! t (current-username req)))
                 '())
             )
           (make-task #:username (current-username req)
                      #:in-progress #t
-		     #:verified 0
+                     #:verified 0
                      #:comment comment
                      #:category category
                      #:endtime endtime
@@ -644,6 +659,7 @@
    (("validate-user") validate-user)
    (("update-category") update-category)
    (("update-comment") update-comment)
+   (("verify") verify)
    (("update-endtime") update-endtime)
    (("remove-doc") remove-doc)
    (("pause") pause)
@@ -659,8 +675,7 @@
          (url->string
           (struct-copy url (request-uri req)
                        [scheme "https"]
-;                       [host "tommywindich.com"]
-		       [host "localhost"]
+		       [host "tommywindich.com"]
                        [port 443]))))
       #:port 80
       #:listen-ip #f
@@ -678,10 +693,8 @@
                     #:ssl? #t
                     #:listen-ip #f
                     #:port 443
-                    ;#:ssl-cert (build-path "/etc/ssl/localcerts" "combined.crt")
-                    #:ssl-cert (build-path "./server-cert.pem")
-                    ;#:ssl-key (build-path "/etc/ssl/localcerts" "www.tommywindich.com.key")
-                    #:ssl-key (build-path "./private-key.pem")
+                    #:ssl-cert (build-path "/etc/ssl/localcerts" "combined.crt")
+                    #:ssl-key (build-path "/etc/ssl/localcerts" "www.tommywindich.com.key")
                     #:servlet-regexp #rx""
                     #:extra-files-paths (list 
                                          (build-path "./htdocs"))
