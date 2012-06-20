@@ -8,6 +8,7 @@
    (comment)
    (_id)
    (in-progress)
+   (verified)
    (starttime #:required)
    (endtime)))
 

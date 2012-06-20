@@ -21,15 +21,13 @@ var categoryArray = new Array();
 var employeeArray = new Array();
 
 function suppressNonNumericInput(event){
-
     if( !(event.keyCode == 8                                // backspace
           || event.keyCode == 46                              // delete
           || (event.keyCode >= 35 && event.keyCode <= 40)     // arrow keys/home/end
 	  || event.keyCode == 190 || event.keyCode == 188 
 	  || event.keyCode == 109 || event.keyCode == 110 
           || (event.keyCode >= 48 && event.keyCode <= 57)     // numbers on keyboard
-          || (event.keyCode >= 96 && event.keyCode <= 105))   // number on keypad
-      ) {
+          || (event.keyCode >= 96 && event.keyCode <= 105))) {
             event.preventDefault();     // Prevent character input
     }
 }
@@ -362,7 +360,7 @@ function end_task(st) {
 	    "comment=" + encodeURIComponent($("#comment_" + st).val()) +
 	    "&category=" + encodeURIComponent($("#auto_cat" + st).val()) +
 	    "&starttime=" + $("#starttime_" + st).val() +
-	    "&bsonid=" + $("#bsonid_" + st).val() +
+	    "&bsonid=" + encodeURIComponent($("#bsonid_" + st).val())g +
 	    "&endtime=" + d.getTime(),
 	success: function() {
 	    $('#task_' + st).remove();
@@ -620,22 +618,117 @@ function init() {
 		      });
 		      tabview.add(tab);
 		      tabview.render();
-              $.ajax({
-                type: "GET",
-                url: "get-employees",
-                dataType: 'xml',
-                context:document.body,
-                success: function(xml){
+		      $.ajax({
+			  type: "GET",
+			  url: "get-employees",
+			  dataType: 'xml',
+			  context:document.body,
+			  success: function(xml){
+			      var tasksArray = new Array();
+			      var tasksObj = new Object();
+			      var dataTable;
+			      var employee_count = 0;
+			      var monthname = new Array("January","Feburary","March",
+						      "April","May","June","July",
+						      "August","September","October",
+						      "November","December");
+			      //Parse employees xml and populate tasksObj
 			      $(xml).find('employees').each(function(){
-				    $(this).find('employee').each(function(){
-                        employeeArray.push($(this).find('employee').text());
-                    });
-                  });
-                  alert(employeeArray.length);
-                  if (employeeArray.length > 0)
-                    $("#employees_link").show();
-                }
-              });
+				  $(this).find('employee').each(function(){
+				      employee_count++;
+				      var username = $(this).attr("username");
+				      $(this).find('tasks').each(function(){
+					  $(this).find('task').each(function(){
+					      var verified = false;
+					      if ($(this).find('verified').text() == 'T')
+						  verified = true;
+					      var d = new Date(parseInt($(this).find('endtime').text()));
+					      var y = d.getFullYear();
+					      var m = d.getMonth();
+					      var day = d.getDate();
+					      tasksArray.push({
+						  Hours : $(this).find('hours').text(), 
+						  Date: monthname[m] + " " + day + ", " + y,
+						  Category : $(this).find('category').text(),
+						  Verified : verified
+					      });
+					  });
+				      });
+				      tasksObj[username] = tasksArray;
+				  });
+			      });
+
+			      if (employee_count > 0)
+				  $("#employees_link").show();
+			      $("#employees_link").click(function(){
+				  updateTable = function(key){
+                                      if (dataTable) {                                                                                      
+					  var callback = {                                                                              
+                                              success: dataTable.onDataReturnInitializeTable,                                       
+                                              failure: dataTable.onDataReturnAppendRows,                                            
+                                              scope: dataTable,                                                                     
+                                              argument: {}                                                                          
+					  };  
+					  dataTable.getDataSource().liveData = tasksObj[key];
+					  dataTable.getDataSource().sendRequest(null,
+										{success: dataTable.onDataReturnInitializeTable,
+										failure: dataTable.onDataReturnAppendRows,
+										argument: dataTable.getState()},
+										dataTable);
+					  dataTable.render();
+				      }                                                                                                     
+				  };
+				  var first_emp = $('#employee').attr("selectedIndex");
+				  var dataSource = new yui2.util.DataSource(tasksObj[first_emp],{
+				      responseType : yui2.util.DataSource.TYPE_JSARRAY,
+				      responseSchema : {
+					  fields : [{key:'Verified',parser:yui2.util.DataSource.parseBoolean}
+						    ,{key:'Date',parser:"date"}
+						    ,{key:'Hours',parser:"number"}
+						    ,{key:'Category',parser:"string"}]
+				      }
+				  });
+				  var msgPanel = new yui2.widget.SimpleDialog("dlg", {modal:true,fixedcenter:true,draggable:true});
+				  var body_str = "<table><tr><td><select id=employees onchange=\"updateTable(this.options[this.selectedIndex].value)\">";
+				  for (var x in tasksObj) {
+				      body_str += '<option value="'+ x +'">' + x + '</option>';
+				  }
+				  body_str += "</select></td>";
+				  body_str += "<td style=padding-left:5px><label for=show_verified>Show Verified : </label><input name=show_verified id=show_verified type=checkbox onclick=updateTable(document.getElementById(\"employees\").options[document.getElementById(\"employees\").selectedIndex].value)> </td>";
+				  body_str += "</tr></table>";
+				  body_str += "<div id=datatable></div>";
+				  msgPanel.setHeader("Employees");
+				  msgPanel.cfg.setProperty("icon", yui2.widget.SimpleDialog.ICON_INFO); 
+				  var myButtons = [{ text: "OK", handler: 
+						     function(){
+							 update_pending(dataTable);this.hide();
+						     }
+						   }];
+				  msgPanel.cfg.queueProperty("buttons", myButtons); 
+				  msgPanel.setBody(body_str);
+				  msgPanel.render(document.body);
+				  msgPanel.show();
+				  dataTable = new yui2.widget.DataTable(
+				      "datatable",
+				      [
+					  {key:"Verify",formatter:"checkbox", resizeable:true},
+					  {key:"Date", formatter:"date", sortable:true, resizeable:true},
+					  {key:"Hours",formatter:"number",
+					   sortable:true, resizeable:true},
+					  {key:"Category",sortable:true, resizeable:true}
+				      ], 
+				      dataSource, {paginator: 
+				       new yui2.widget.Paginator({rowsPerPage:8})});
+
+
+                                  dataTable.subscribe("checkboxClickEvent", function(oArgs){
+                                      var elCheckbox = oArgs.target;                                            
+                                      var oRecord = this.getRecord(elCheckbox);                                 
+                                      oRecord.setData("Verify",elCheckbox.checked);                             
+				  });
+			      });
+			  }
+		      });
 		      $.ajax({
 			    type: "GET",
 			    url: "get-tasks",

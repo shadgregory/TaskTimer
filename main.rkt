@@ -33,6 +33,9 @@
         (mongo-dict-ref t 'comment)
         "")))
 
+(define (boolean->xexpr b)
+  (if b "T" "F"))
+
 (define pause
   (lambda (req)
     (define bindings (request-bindings req))
@@ -85,7 +88,7 @@
                         "task"
                         (make-hasheq
                          (list (cons 'username (current-username req))
-                               (cons 'in-progress 1)))))
+                               (cons 'in-progress #t)))))
     (define cookies (request-cookies req))
     (date-display-format 'iso-8601)
     (define id-cookie
@@ -165,7 +168,7 @@
                                                           (value ,(mongo-dict-ref t 'starttime))
                                                           (type "hidden")))
                                                         (input 
-                                                         ((id ,(string-append "bsonid_" (bson-objectid->string (mongo-dict-ref t '_id))))
+                                                         ((id ,(string-append "bsonid_" (mongo-dict-ref t 'starttime)))
                                                           (value ,(bson-objectid->string (mongo-dict-ref t '_id)))
                                                           (type "hidden")))
                                                         (input ((type "text")
@@ -344,7 +347,31 @@
      `(employees
        ,@(for/list ((u user-match))
            `(employee
-             ,(mongo-dict-ref u 'username)))))))
+	     ((username ,(mongo-dict-ref u 'username)))
+	     (tasks
+	      ,@(for/list ((t (mongo-dict-query 
+			       "task" 
+			       (make-hasheq 
+				(list (cons 'in-progress #f) (cons 'username (mongo-dict-ref u 'username)))))
+			    ))
+		  `(task
+		    (bsonid ,(bson-objectid->string (mongo-dict-ref t '_id)))
+		    (endtime ,(mongo-dict-ref t 'endtime))
+		    (starttime ,(mongo-dict-ref t 'starttime))
+		    (category ,(mongo-dict-ref t 'category))
+		    (hours ,(calculate-hours (string->number (mongo-dict-ref t 'starttime))
+					     (string->number (mongo-dict-ref t 'endtime))
+					     (mongo-dict-ref u 'username)))
+		    (verified ,(boolean->xexpr (mongo-dict-ref t 'verified)))
+		    (comment ,(mongo-dict-ref t 'comment))
+		    );task
+		  );for/list
+	      );tasks
+	     );employee
+	   );for/list
+       );employees
+     #:mime-type #"application/xml")
+    ))
 
 (define get-tasks
   (lambda (req)
@@ -459,7 +486,7 @@
         ((starttime (extract-binding/single 'starttime bindings))
          (username (current-username req))
          (t (make-task #:username username
-                       #:in-progress 1
+                       #:in-progress #t
                        #:starttime starttime)))
       (response/xexpr
        `(task
@@ -561,13 +588,12 @@
 
 (define save-task
   (lambda (req)
-    (display "calling save-task")
-    (newline)
     (define bindings (request-bindings req))
     (let*
         ((comment (extract-binding/single 'comment bindings))
          (endtime (extract-binding/single 'endtime bindings))
          (category (extract-binding/single 'category bindings))
+	 (bsonid (extract-binding/single 'bsonid bindings))
          (starttime (extract-binding/single 'starttime bindings))
          (found-task #f)
          (task-match (mongo-dict-query
@@ -575,48 +601,30 @@
                       (make-hasheq
                        (list (cons 'starttime starttime))))))
       (if (exists-binding? 'bsonid bindings) 
-          (for/list ((t (mongo-dict-query "task" (hasheq))))           
-            (if (equal? (string-trim-both(bson-objectid->string (task-_id t))) (extract-binding/single 'bsonid bindings))              
+          (for/list ((t (mongo-dict-query "task" (hasheq))))
+	    (display (string-append "db : "
+				    (bson-objectid->string (task-_id t))))
+	    (display (string-append " binding : " bsonid))
+	    (newline)
+            (if (string=? (string-trim-both (bson-objectid->string (task-_id t))) (string-trim-both bsonid))
                 (begin
                   (set! found-task #t)
                   (set-task-starttime! t starttime)
                   (set-task-endtime! t endtime)
                   (set-task-category! t category)
                   (set-task-comment! t comment)
-                  (set-task-in-progress! t 0)
+                  (set-task-in-progress! t #f)
+		  (set-task-verified! t #f)
                   (set-task-username! t (current-username req)))
                 '())
             )
           (make-task #:username (current-username req)
-                     #:in-progress 0
+                     #:in-progress #t
+		     #:verified 0
                      #:comment comment
                      #:category category
                      #:endtime endtime
                      #:starttime starttime)))
-    (response/xexpr
-     '(msg "Task saved."))))
-
-(define save-new-task
-  (lambda (req)
-    (define bindings (request-bindings req))
-    (let*
-        ((comment (extract-binding/single 'comment bindings))
-         (endtime (extract-binding/single 'endtime bindings))
-         (category (extract-binding/single 'category bindings))
-         (starttime (extract-binding/single 'starttime bindings))
-         (task-match (mongo-dict-query
-                      "task"
-                      (make-hasheq
-                       (list (cons 'starttime starttime))))))
-      (for/list ((t (mongo-dict-query "task" (hasheq))))
-        (if (equal? (task-starttime t) starttime)
-            (begin
-              (set-task-endtime! t endtime)
-              (set-task-category! t category)
-              (set-task-comment! t comment)
-              (set-task-in-progress! t 0)
-              (set-task-username! t (current-username req)))
-            '())))
     (response/xexpr
      '(msg "Task saved."))))
 
@@ -651,7 +659,8 @@
          (url->string
           (struct-copy url (request-uri req)
                        [scheme "https"]
-                       [host "tommywindich.com"]
+;                       [host "tommywindich.com"]
+		       [host "localhost"]
                        [port 443]))))
       #:port 80
       #:listen-ip #f
@@ -669,8 +678,10 @@
                     #:ssl? #t
                     #:listen-ip #f
                     #:port 443
-                    #:ssl-cert (build-path "/etc/ssl/localcerts" "combined.crt")
-                    #:ssl-key (build-path "/etc/ssl/localcerts" "www.tommywindich.com.key")
+                    ;#:ssl-cert (build-path "/etc/ssl/localcerts" "combined.crt")
+                    #:ssl-cert (build-path "./server-cert.pem")
+                    ;#:ssl-key (build-path "/etc/ssl/localcerts" "www.tommywindich.com.key")
+                    #:ssl-key (build-path "./private-key.pem")
                     #:servlet-regexp #rx""
                     #:extra-files-paths (list 
                                          (build-path "./htdocs"))
