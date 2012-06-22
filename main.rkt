@@ -423,16 +423,23 @@
   (lambda (req)
     (let*
         ((bindings (request-bindings req))
-         (username (extract-binding/single 'username bindings))
+	 (username (extract-binding/single 'username bindings))
          (bsonids  (extract-bindings 'bsonid bindings)))
       (for/list ((t (mongo-dict-query "task" (make-hasheq
-                                             (list (cons 'username username)
-                                                   (cons 'verified #f))))))
+                                             (list 
+					      (cons 'username username))))))
         (for/list ((bsonid bsonids))
-          (if (equal? (string-trim-both (bson-objectid->string (task-_id t))) 
+          (if (string=? (string-trim-both (bson-objectid->string (task-_id t))) 
                       (string-trim-both bsonid))
-              (set-task-verified! t #t)
-              '()))))))
+              (begin
+		(display "match!")
+		(set-task-verified! t #t))
+              (display "no match!")))))
+    (response/xexpr
+     '(msg "Verified")
+     )
+    );lambda
+  ) ;verify
 
 (define update-category
   (lambda (req)
@@ -643,6 +650,7 @@
     (response/xexpr
      '(msg "Task saved."))))
 
+
 (define (start request)
   (tasktimer-dispatch request))
 
@@ -675,7 +683,8 @@
          (url->string
           (struct-copy url (request-uri req)
                        [scheme "https"]
-		       [host "tommywindich.com"]
+                       ;                       [host "tommywindich.com"]
+                       [host "localhost"]
                        [port 443]))))
       #:port 80
       #:listen-ip #f
@@ -693,8 +702,10 @@
                     #:ssl? #t
                     #:listen-ip #f
                     #:port 443
-                    #:ssl-cert (build-path "/etc/ssl/localcerts" "combined.crt")
-                    #:ssl-key (build-path "/etc/ssl/localcerts" "www.tommywindich.com.key")
+                    ;#:ssl-cert (build-path "/etc/ssl/localcerts" "combined.crt")
+                    #:ssl-cert (build-path "./server-cert.pem")
+                    ;#:ssl-key (build-path "/etc/ssl/localcerts" "www.tommywindich.com.key")
+                    #:ssl-key (build-path "./private-key.pem")
                     #:servlet-regexp #rx""
                     #:extra-files-paths (list 
                                          (build-path "./htdocs"))

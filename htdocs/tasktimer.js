@@ -19,7 +19,10 @@ var paused_hash = new Object();
 var begin_paused_hash = new Object();
 var categoryArray = new Array();
 var employeeArray = new Array();
-
+var monthname = new Array("January","Feburary","March",
+			  "April","May","June","July",
+			  "August","September","October",
+			  "November","December");
 function suppressNonNumericInput(event){
     if( !(event.keyCode == 8                                // backspace
           || event.keyCode == 46                              // delete
@@ -432,7 +435,6 @@ function init() {
     };
 
 
-
     YUI().use("yui2-datatable",
 	      "yui2-paginator",
 	      "yui2-connection",
@@ -484,9 +486,11 @@ function init() {
 		      for (var i=0;i<=len;i++) { 
 			  var rec = records.getRecord(i);
 			  if (rec.getData('Verify')) {
-			      url_string.concat("oid=" + rec.getData('oid'));
+			      url_string = url_string.concat("bsonid=" + encodeURIComponent(rec.getData('Bsonid')));
 			  }
-		      }  
+		      }
+		      url_string = url_string.concat("&username=" + encodeURIComponent(records.getRecord(0).getData('Username')));
+		      alert(url_string);
 		      var transaction = yui2.util.Connect.asyncRequest(
 			  'GET', url_string,
 			  {success:function(o){eval(o.responseText);},failure:function(o){alert(o.responseText);}});
@@ -627,6 +631,59 @@ function init() {
 		  table.subscribe("cellClickEvent", table.onEventShowCellEditor);
                   table.hideColumn(table.getColumn(4));
 
+		  var get_tasks = function(unverified_only) {
+		      tasksObj = new Object();
+		      $.ajax({
+			  type: "GET",
+			  url: "get-employees",
+			  dataType: "xml",
+			  context: document.body,
+			  success: function(xml) {
+			      $(xml).find('employee').each(function(){
+				  var tasksArray = new Array();
+				  employee_count++;
+				  var username = $(this).attr("username");
+				  $(this).find('tasks').each(function(){
+				      $(this).find('task').each(function(){
+					  var verified = false;
+					  if ($(this).find('verified').text() == 'T')
+					      verified = true;
+					  var d = new Date(parseInt($(this).find('endtime').text()));
+					  var y = d.getFullYear();
+					  var m = d.getMonth();
+					  var day = d.getDate();
+					  if (unverified_only){
+					      alert("1");
+					      if (!verified) {
+						  tasksArray.push({
+						      Hours : $(this).find('hours').text(), 
+						      Date: monthname[m] + " " + day + ", " + y,
+						      Category : $(this).find('category').text(),
+						      Bsonid : $(this).find('bsonid').text(),
+						      Username: username,
+						      Verified : verified
+						  });
+					      }
+					  } else {
+					      tasksArray.push({
+						  Hours : $(this).find('hours').text(), 
+						  Date: monthname[m] + " " + day + ", " + y,
+						  Category : $(this).find('category').text(),
+						  Bsonid : $(this).find('bsonid').text(),
+						  Username: username,
+						  Verified : verified
+					      });
+					  }
+				      });
+				  });
+				  tasksObj[username] = tasksArray;
+			      });
+			  }
+		      });
+		      alert(tasksObj['larry'].length);
+		      return tasksObj;
+		  };
+
 		  var tab;
 		  Y.on('domready', function(e) {
 		      tab = new Y.Tab({
@@ -636,6 +693,8 @@ function init() {
 		      });
 		      tabview.add(tab);
 		      tabview.render();
+		      $("body").css("cursor", "progress");
+		      
 		      $.ajax({
 			  type: "GET",
 			  url: "get-employees",
@@ -645,10 +704,7 @@ function init() {
 			      var tasksObj = new Object();
 			      var dataTable;
 			      var employee_count = 0;
-			      var monthname = new Array("January","Feburary","March",
-						      "April","May","June","July",
-						      "August","September","October",
-						      "November","December");
+
 			      //Parse employees xml and populate tasksObj
 			      $(xml).find('employee').each(function(){
 				  var tasksArray = new Array();
@@ -663,12 +719,16 @@ function init() {
 					  var y = d.getFullYear();
 					  var m = d.getMonth();
 					  var day = d.getDate();
-					  tasksArray.push({
-					      Hours : $(this).find('hours').text(), 
-					      Date: monthname[m] + " " + day + ", " + y,
-					      Category : $(this).find('category').text(),
-					      Verified : verified
-					  });
+					  if (!verified) {
+					      tasksArray.push({
+						  Hours : $(this).find('hours').text(), 
+						  Date: monthname[m] + " " + day + ", " + y,
+						  Category : $(this).find('category').text(),
+						  Bsonid : $(this).find('bsonid').text(),
+						  Username: username,
+						  Verified : verified
+					      });
+					  }
 				      });
 
 				      tasksObj[username] = tasksArray;
@@ -678,22 +738,28 @@ function init() {
 			      if (employee_count > 0)
 				  $("#employees_link").show();
 			      $("#employees_link").click(function(){
-				  updateTable = function(key){
-                                      if (dataTable) {                                                                                      
-					  var callback = {                                                                              
+				  updateTable = function(key, show_all){
+				      alert("updateTable(" + key + "," + show_all + ")");
+                                      if (dataTable) {                                                       
+					  var callback = {
                                               success: dataTable.onDataReturnInitializeTable,                                       
                                               failure: dataTable.onDataReturnAppendRows,                                            
                                               scope: dataTable,                                                                     
                                               argument: {}                                                                          
-					  };  
+					  };
+					  alert(show_all);
+					  if (show_all)
+					      tasksObj = get_tasks(false);
+					  else
+					      tasksObj = get_tasks(true);
 					  dataTable.getDataSource().liveData = tasksObj[key];
 					  dataTable.getDataSource().sendRequest(null,
 										{success: dataTable.onDataReturnInitializeTable,
-										failure: dataTable.onDataReturnAppendRows,
-										argument: dataTable.getState()},
+										 failure: dataTable.onDataReturnAppendRows,
+										 argument: dataTable.getState()},
 										dataTable);
 					  dataTable.render();
-				      }                                                                                                     
+				      }                                                                      
 				  };
 				  var myArray = new Array();
 				  for (var x in tasksObj) {
@@ -707,6 +773,8 @@ function init() {
 					  fields : [{key:'Verified',parser:yui2.util.DataSource.parseBoolean}
 						    ,{key:'Date',parser:"date"}
 						    ,{key:'Hours',parser:"number"}
+						    ,{key:'Bsonid',hidden:true}
+						    ,{key:"Username",hidden:true}
 						    ,{key:'Category',parser:"string"}]
 				      }
 				  });
@@ -716,7 +784,7 @@ function init() {
 				      body_str += '<option value="'+ myArray[i] +'">' + myArray[i] + '</option>';
 				  }
 				  body_str += "</select></td>";
-				  body_str += "<td style=padding-left:5px><label for=show_verified>Show Verified : </label><input name=show_verified id=show_verified type=checkbox onclick=updateTable(document.getElementById(\"employees\").options[document.getElementById(\"employees\").selectedIndex].value)> </td>";
+				  body_str += "<td style=padding-left:5px><label for=show_verified>Show Verified : </label><input name=show_verified id=show_verified type=checkbox onclick=updateTable(document.getElementById(\"employees\").options[document.getElementById(\"employees\").selectedIndex].value,true)> </td>";
 				  body_str += "</tr></table>";
 				  body_str += "<div id=datatable></div>";
 				  msgPanel.setHeader("Employees");
@@ -737,7 +805,9 @@ function init() {
 					  {key:"Date", formatter:"date", sortable:true, resizeable:true},
 					  {key:"Hours",formatter:"number",
 					   sortable:true, resizeable:true},
-					  {key:"Category",sortable:true, resizeable:true}
+					  {key:"Category",sortable:true, resizeable:true},
+					  {key:"Bsonid",hidden:true},
+					  {key:"Username",hidden:true}
 				      ], 
 				      dataSource, {paginator: 
 				       new yui2.widget.Paginator({rowsPerPage:8})});
@@ -749,6 +819,7 @@ function init() {
                                       oRecord.setData("Verify",elCheckbox.checked);                             
 				  });
 			      });
+			      $("body").css("cursor", "auto");
 			  }
 		      });
 		      $.ajax({
