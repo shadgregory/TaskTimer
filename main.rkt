@@ -624,10 +624,6 @@
                        (list (cons 'starttime starttime))))))
       (if (exists-binding? 'bsonid bindings) 
           (for/list ((t (mongo-dict-query "task" (hasheq))))
-            (display (string-append "db : "
-                                    (bson-objectid->string (task-_id t))))
-            (display (string-append " binding : " bsonid))
-            (newline)
             (if (string=? (string-trim-both (bson-objectid->string (task-_id t))) (string-trim-both bsonid))
                 (begin
                   (set! found-task #t)

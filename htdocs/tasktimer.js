@@ -501,6 +501,8 @@ function init() {
 		  
 		  var update_pending = function(datatable) {
 		      var records = datatable.getRecordSet();
+		      if (!records.getRecord(0))
+			  return;
 		      var len = records._records.length-1;
 		      var taskData = new Array();
 		      var url_string = 'verify?';
@@ -661,6 +663,13 @@ function init() {
 		      tabview.add(tab);
 		      tabview.render();
 		      $("body").css("cursor", "progress");
+		      protab = new Y.Tab({
+			  label: "Pro",
+			  content:
+			  '<div height="430"><h2>Coming soon!</h2></div>'
+		      });
+		      tabview.add(protab);
+		      tabview.render();
 		      
 		      $.ajax({
 			  type: "GET",
