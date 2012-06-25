@@ -16,7 +16,6 @@
          "model.rkt"
          web-server/servlet-env)
 (require (planet "main.rkt" ("jaymccarthy" "mongodb.plt" 1 12)))
-
 (define m (create-mongo))
 (define d (make-mongo-db m "tasktimer"))
 (current-mongo-db d)
@@ -601,12 +600,15 @@
                                    (br)
                                    (input ((type "submit")(name "login")(value "Login")))))
                         (div ((style "border:1px solid black;background:#99CCFF;padding-top:5px;padding-left:5px;"))
-                             (form ((id "create_logon_form") 
+                             (form ((id "create_logon_form")
                                     (action "validate-new-user")
                                     (onsubmit "return cmp_passwords();"))
                                    ,@(formlet-display new-user-formlet)
                                    (br)
-                                   (input ((type "submit")(name "login")(value "Create Account")))))))))))))
+                                   (input ((type "submit")(name "login")(value "Create Account")))))
+			(div ((style "border:1px solid black;background:#99CCFF;padding-bottom:5px;padding-top:5px;padding-left:5px;"))
+			     (g:plusone ((annotations "inline"))))
+			))))))))
 
 (define save-task
   (lambda (req)
@@ -646,7 +648,6 @@
     (response/xexpr
      '(msg "Task saved."))))
 
-
 (define (start request)
   (tasktimer-dispatch request))
 
@@ -679,8 +680,8 @@
          (url->string
           (struct-copy url (request-uri req)
                        [scheme "https"]
-                       ;                       [host "tommywindich.com"]
-                       [host "localhost"]
+		       [host "tommywindich.com"]
+                       ;[host "localhost"]
                        [port 443]))))
       #:port 80
       #:listen-ip #f
@@ -698,10 +699,10 @@
                     #:ssl? #t
                     #:listen-ip #f
                     #:port 443
-                    ;#:ssl-cert (build-path "/etc/ssl/localcerts" "combined.crt")
-                    #:ssl-cert (build-path "./server-cert.pem")
-                    ;#:ssl-key (build-path "/etc/ssl/localcerts" "www.tommywindich.com.key")
-                    #:ssl-key (build-path "./private-key.pem")
+                    #:ssl-cert (build-path "/etc/ssl/localcerts" "combined.crt")
+		    ;#:ssl-cert (build-path "./server-cert.pem")
+                    #:ssl-key (build-path "/etc/ssl/localcerts" "www.tommywindich.com.key")
+		    ;#:ssl-key (build-path "./private-key.pem")
                     #:servlet-regexp #rx""
                     #:extra-files-paths (list 
                                          (build-path "./htdocs"))
