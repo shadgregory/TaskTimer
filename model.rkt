@@ -23,6 +23,6 @@
   ((username #:required)
    (cookieid)
    (reportsto)
-   (password #:required)))
+   (password)))
 
 (provide (all-defined-out))

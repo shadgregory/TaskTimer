@@ -10,6 +10,18 @@ Array.prototype.unique = function() {
     }
     return a;
 };
+//credits: http://www.netlobo.com/url_query_string_javascript.html
+function gup(url, name) {
+    name = name.replace(/[\[]/,"\\\[").replace(/[\]]/,"\\\]");
+    var regexS = "[\\#&]"+name+"=([^&#]*)";
+    var regex = new RegExp( regexS );
+    var results = regex.exec( url );
+    if( results == null )
+        return "";
+    else
+        return results[1];
+}
+
 //http://www.tutorialspoint.com/javascript/array_filter.htm
 if (!Array.prototype.filter) {
     Array.prototype.filter = function(fun /*, thisp*/) {
@@ -29,6 +41,58 @@ if (!Array.prototype.filter) {
 
 	return res;
     };
+}
+
+function validateToken(token) {
+    var VALIDURL    =   'https://www.googleapis.com/oauth2/v1/tokeninfo?access_token=';
+    $.ajax({
+        url: VALIDURL + token,
+        data: null,
+        success: function(responseText){  
+            getUserInfo();
+        },  
+        failure: function(responseText){  
+            document.location = "/?msg=baduser";
+        },  
+        dataType: "jsonp"  
+    });
+}
+
+function getUserInfo() {
+    $.ajax({
+        url: 'https://www.googleapis.com/oauth2/v1/userinfo?access_token=' + acToken,
+        data: null,
+        success: function(resp) {
+            user    =   resp;
+	    verified_email = user.verified_email;
+	    if (verified_email) {
+		$.ajax({
+		    url:"/oauth-user",
+		    data:{username : user.email},
+		    success:function(xml){
+			$(xml).find("cookie").each(function(){
+			    YUI().use('cookie', function (Y) {
+				Y.Cookie.set("id", 
+					     user.email + "-" + $(this).text(),
+					     {secure : true}
+					    );
+				document.cookie = "id="+user.email+"-"+$(this).text() + ";secure=true";
+				document.location = "/timer";
+			    });
+			});
+
+		    }
+		});
+
+	    } else {
+		$.ajax({
+		    url:"/",
+		    data:{msg : "baduser"}
+		});
+	    }
+        },
+        dataType: "jsonp"
+    });
 }
 
 String.prototype.trim = function() {
