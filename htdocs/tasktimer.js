@@ -77,7 +77,7 @@ function getUserInfo() {
 					     {secure : true}
 					    );
 				document.cookie = "id="+user.email+"-"+$(this).text() + ";secure=true";
-				document.location = "/timer";
+				document.location = "/timer?username="+user.email;
 			    });
 			});
 

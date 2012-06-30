@@ -87,6 +87,7 @@
 
 (define timer-page
   (lambda (req)
+    (define bindings (request-bindings req))
     (define task-match (mongo-dict-query
                         "task"
                         (make-hasheq
@@ -274,6 +275,9 @@
 
 (define current-username
   (lambda (req)
+    (define bindings (request-bindings req))
+    (if (exists-binding? 'username bindings)
+	(extract-binding/single 'username bindings)
     (let* ((cookies (request-cookies req))
            (the-cookie (findf (lambda (c)
                                 (string=? "id" (client-cookie-name c)))
@@ -283,7 +287,7 @@
                            (string-append username "-" (get-cookieid username))
                            (client-cookie-value the-cookie)))
           username
-          "baduser"))))
+          "baduser")))))
 
 (define calculate-hours
   (lambda (starttime endtime username)
