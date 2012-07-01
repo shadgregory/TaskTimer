@@ -258,6 +258,17 @@ function show_dialog (st) {
     return false;
 }
 
+function get_username() {
+    var username;
+    var db_cookieid;
+    YUI().use('cookie', function (Y) {
+	var value = Y.Cookie.get("id");
+	username = value.split("-")[0];
+	db_cookieid = value.split("-")[1];
+    });
+    return username;	      
+}
+
 function update_notes (st) {
     $.ajax({
 	url: "update-comment",
@@ -418,7 +429,8 @@ function add_task() {
     $.ajax({
 	url: "create-task",
 	context: document.body,
-	data: "starttime=" + $("#starttime_" + d.getTime()).val() + 
+	data: "username=" + get_username() + 
+	    "&starttime=" + $("#starttime_" + d.getTime()).val() + 
 	    "&in-progress=1",
 	success: function(xml) {
 	    $(xml).find('task').each(function(){
@@ -693,7 +705,7 @@ function init() {
 			  url: "update-endtime",
 			  context: document.body,
 			  data: "starttime=" + args.editor.getRecord().getData().starttime +
-			      "&bsonid=" + args.editor.getRecord().getData().bsonid +
+			      "&bsonid=" + encodeURIComponent(args.editor.getRecord().getData().bsonid) +
 			      "&hours=" + args.newData
 		      });
 		  });

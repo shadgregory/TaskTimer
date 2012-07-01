@@ -477,14 +477,11 @@
          (task-match (mongo-dict-query
                       "task"
                       (make-hasheq
-                       (list (cons 'starttime starttime)(cons 'username (current-username req)))))))
-      (for/list ((t (mongo-dict-query "task" (hasheq))))
-        (if (equal? (string-trim-both (bson-objectid->string (task-_id t))) bsonid)
-            (set-task-endtime! t 
-                               (number->string 
-                                (+ (* (string->number hours) 3600000) 
-                                   (string->number starttime))))
-            '())))
+                       (list (cons '_id  (string->bson-objectid (string-trim-both bsonid))))))))
+      (mongo-dict-set! (sequence-ref task-match 0) 'endtime
+		       (number->string
+			(+ (* (string->number hours) 3600000)
+			   (string->number starttime)))))
     (response/xexpr
      '(msg "EndTime Updated")
      #:mime-type #"application/xml")))
@@ -522,16 +519,6 @@
          (bsonid ,(bson-objectid->string (task-_id t)))
          (msg "Task created"))
        #:mime-type #"application/xml"))))
-
-(define (get-bindings request)
-  (let ([bindings (request-bindings/raw request)])
-    bindings))
-
-(define file-not-found 
-  (redirect-to "/not-found.html"))
-
-(define APPLICATION/JSON-MIME-TYPE
-  (string->bytes/utf-8 "application/json; charset=utf-8"))
 
 (define oauth2callback
   (lambda (req)
