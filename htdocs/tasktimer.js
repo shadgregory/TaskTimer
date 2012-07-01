@@ -637,7 +637,7 @@ function init() {
 				  "&starttime=" + begin_date.getTime() +
 				  "&endtime=" + end_date.getTime();
 			      if (bsonid_array[i].value.trim() != "[object Object]")
-				  data_string = data_string.concat("&bsonid=" + bsonid_array[i].value);
+				  data_string = data_string.concat("&bsonid=" + encodeURIComponent(bsonid_array[i].value));
 			      $.ajax({
 				  url: "save-task"
 				  ,context: document.body
