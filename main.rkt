@@ -524,20 +524,20 @@
   (lambda (req)
     (define bindings (request-bindings req))
     (response/xexpr
-     '(html
+     `(html
        (head 
 	(script ((type "text/javascript")(src "tasktimer.js")) " ")
 	(script ((type "text/javascript")(src "jquery-1.7.1.min.js")) " ")
 	(script ((src "yui/build/yui/yui.js")(charset "utf-8"))" ")
 	(script ((type "text/javascript"))
-		"var url = document.URL; expiresIn = gup(url, 'expires_in');tokenType = gup(url, 'token_type');acToken = gup(url, 'access_token');validateToken(acToken);"
-		)
+		"var url = document.URL; expiresIn = gup(url, 'expires_in');tokenType = gup(url, 'token_type');acToken = gup(url, 'access_token');validateToken(acToken);")
 	)
-       (body
+       (body ((link "#000000")(bgcolor "#228B22"))
+                   (div ((id "center_content"))
+			,(banner)
 	"You should be redirected shortly. If not please click "
 	(a ((href "timer") (id "goto-timer")) "here")
-	"."
-	)))))
+	"."))))))
 
 (define validate-user
   (lambda (req)
@@ -593,6 +593,19 @@
         (else
          (redirect-to "/?msg=nomatch"))))))
 
+(define banner
+  (lambda ()
+	   '(div ((class "header"))
+		(table
+		 (tr
+		  (td
+		   (img ((src "tasktimer.png")
+			 (width "128")(height "128"))))
+		  (td
+		   (h1 ((style "font-family:titan,cursive")) "Tommy Windich"))
+		  (td ((style "text-align:right;vertical-align:bottom;"))
+		      (h3 ((style "font-family:dynalight;"))"Time tracking made easy...")))))))
+
 (define logon-page
   (lambda (req)
     (define msg (get-msg req))
@@ -613,16 +626,7 @@
                    (script ((type "text/javascript")(src "tasktimer.js"))" "))
              (body ((link "#000000")(bgcolor "#228B22"))
                    (div ((id "center_content"))
-                        (div ((class "header"))
-                             (table
-                              (tr
-                               (td
-                                (img ((src "tasktimer.png")
-                                      (width "128")(height "128"))))
-                               (td
-                                (h1 ((style "font-family:titan,cursive")) "Tommy Windich"))
-                               (td ((style "text-align:right;vertical-align:bottom;"))
-                                   (h3 ((style "font-family:dynalight;"))"Time tracking made easy...")))))
+			,(banner)
                         (div ((style "border:1px solid black;background:#99CCFF;padding-top:5px;padding-left:5px;"))
                              (div ((id "message_div") (style "color:red;")) 
                                   ,(cond
