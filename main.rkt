@@ -14,12 +14,12 @@
          net/base64
          net/uri-codec
          xml
+	 file/md5
          srfi/13
          "model.rkt"
          web-server/servlet-env)
 (require web-server/configuration/responders)
 (require (planet "main.rkt" ("jaymccarthy" "mongodb.plt" 1 12)))
-(require (planet vyzo/crypto:2:3))
 (define m (create-mongo))
 (define d (make-mongo-db m "tasktimer"))
 (current-mongo-db d)
@@ -73,7 +73,8 @@
                           "paused"
                           (make-hasheq
                            (list (cons 'username (current-username req))
-                                 (cons 'starttime (extract-binding/single 'starttime bindings))))))
+                                 (cons 'starttime (extract-binding/single 
+						   'starttime bindings))))))
     (for/list ((p paused-match))
       (cond
         ((bson-null? (mongo-dict-ref p 'endpause)) '())
