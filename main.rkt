@@ -106,6 +106,7 @@
               (redirect-to "/?msg=baduser")
               '())
           (response/xexpr
+	   #:preamble #"<!DOCTYPE HTML PUBLIC '-//W3C//DTD HTML 4.01 Transitional//EN' 'http://www.w3.org/TR/html4/loose.dtd'>"
            `(html
              (head
               (title ,(string-append "Tommy Windich - " username))
@@ -619,6 +620,7 @@
         (redirect-to "/timer") 
         (begin
           (response/xexpr
+	   #:preamble #"<!DOCTYPE HTML PUBLIC '-//W3C//DTD HTML 4.01 Transitional//EN' 'http://www.w3.org/TR/html4/loose.dtd'>"
            `(html
              (head (title "Tommy Windich")
                    (script ((type "text/javascript")(src "jquery-1.7.1.min.js")) " ")
