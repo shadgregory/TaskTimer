@@ -14,7 +14,7 @@
          net/base64
          net/uri-codec
          xml
-	 file/md5
+         file/md5
          srfi/13
          "model.rkt"
          web-server/servlet-env)
@@ -74,7 +74,7 @@
                           (make-hasheq
                            (list (cons 'username (current-username req))
                                  (cons 'starttime (extract-binding/single 
-						   'starttime bindings))))))
+                                                   'starttime bindings))))))
     (for/list ((p paused-match))
       (cond
         ((bson-null? (mongo-dict-ref p 'endpause)) '())
@@ -106,7 +106,7 @@
               (redirect-to "/?msg=baduser")
               '())
           (response/xexpr
-	   #:preamble #"<!DOCTYPE HTML PUBLIC '-//W3C//DTD HTML 4.01 Transitional//EN' 'http://www.w3.org/TR/html4/loose.dtd'>"
+           #:preamble #"<!DOCTYPE HTML PUBLIC '-//W3C//DTD HTML 4.01 Transitional//EN' 'http://www.w3.org/TR/html4/loose.dtd'>"
            `(html
              (head
               (title ,(string-append "Tommy Windich - " username))
@@ -620,7 +620,7 @@
         (redirect-to "/timer") 
         (begin
           (response/xexpr
-	   #:preamble #"<!DOCTYPE HTML PUBLIC '-//W3C//DTD HTML 4.01 Transitional//EN' 'http://www.w3.org/TR/html4/loose.dtd'>"
+           #:preamble #"<!DOCTYPE HTML PUBLIC '-//W3C//DTD HTML 4.01 Transitional//EN' 'http://www.w3.org/TR/html4/loose.dtd'>"
            `(html
              (head (title "Tommy Windich")
                    (script ((type "text/javascript")(src "jquery-1.7.1.min.js")) " ")
