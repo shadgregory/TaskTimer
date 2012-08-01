@@ -67,6 +67,20 @@
      '(msg "Unpaused")
      #:mime-type #"application/xml")))
 
+(define is-pro
+  (lambda (username)
+    (define user-match (mongo-dict-query
+			"user"
+			(make-hasheq
+			 (list (cons 'username username)))
+			))
+    (define my-user (sequence-ref user-match 0))
+    (cond
+     ((bson-null? (mongo-dict-ref  my-user 'pro)) #f)
+     (else
+      (mongo-dict-ref my-user 'pro))
+     )))
+
 (define get-paused-time
   (lambda (req)
     (define bindings (request-bindings req))
@@ -157,11 +171,18 @@
 (define graphs
   (lambda (req)
     (response/xexpr
-     '(p
+     '(p ((style "text-align:center;"))
        (img ((src "graph-tasks"))))
      )
     )
   )
+
+(define pro-page
+  (lambda (req)
+    (response/xexpr
+     `(div)
+     )
+    ))
 
 (define timer-page
   (lambda (req)
@@ -187,7 +208,7 @@
              (head
               (title ,(string-append "Tommy Windich - " username))
               (link ((type "text/css")(rel "stylesheet")(href "fonts-min.css"))" ")
-              (link ((rel "stylesheet") (href "development-bundle/themes/mint-choc/jquery.ui.all.css")) " ")
+              (link ((rel "stylesheet") (href "development-bundle/themes/redmond/jquery.ui.all.css")) " ")
               (script ((type "text/javascript")(src "tasktimer.js")) " ")
               (script ((src "yui/build/yui/yui.js")(charset "utf-8"))" ")
               (script ((src "yui/build/loader/loader.js")(charset "utf-8"))" ")
@@ -225,7 +246,7 @@
                                   (li (a ((href "#pro")) "Pro"))
                                   )
                                  (div ((style "min-height:430px")(id "cal"))"")
-                                 (div ((style "min-height:430px")(id "datatable"))
+                                 (div ((style "min-height:430px;")(id "datatable"))
                                       (div ((id "pg")) " ")
                                       (div ((id "all-tasks"))))
                                  (div ((height "430")(id "pro"))(h2 "Coming soon!"))
@@ -345,6 +366,39 @@
                  (- endtime starttime))))
       (real->decimal-string (/ (/ (/ total-seconds 1000) 60) 60)))))
 
+(define hash-to-vectorlist
+  (lambda (h)
+    (for/list ([(k v) (in-dict h)])
+      (vector k v))))
+
+(define get-total-hours
+  (lambda (username category)
+    (let ((task-match
+           (mongo-dict-query
+            "task"
+            (make-hasheq
+             (list (cons 'category category) (cons 'username username)))))
+          (total 0))
+      (for/list ((t task-match))
+        (set! total (/(/(/(+ (- (string->number (mongo-dict-ref t 'endtime))
+				    (string->number (mongo-dict-ref t 'starttime))
+				    ) total) 1000)60)60)))
+      total)))
+
+(define get-categories-vector
+  (lambda (username)
+    (let
+        ((task-match (mongo-dict-query
+                     "task"
+                     (make-hasheq
+                      (list (cons 'username username)))))
+      (hash (make-hash '())))
+      (for/list ((t task-match))
+        (dict-set! hash (mongo-dict-ref t 'category) (get-total-hours username (mongo-dict-ref t 'category))))
+        
+      hash
+      )
+    ))
 
 (define get-tasks-with-date
   (lambda (req)
@@ -724,7 +778,12 @@
      (list
       (convert
        (plot
-        (function sin (- pi) pi #:label "y = sin(x)"))'png-bytes)))))
+        (list
+	 (discrete-histogram
+	  (hash-to-vectorlist (get-categories-vector (current-username req)))
+	  #:label "Hours per category")
+       ))
+       'png-bytes)))))
 
 (define save-task
   (lambda (req)

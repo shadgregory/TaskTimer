@@ -549,7 +549,6 @@ function init() {
 	      "calendar",
 	      "event",
 	      "event-base",
-	      "tabview",
 	      "cookie",
 	      function(Y) {
 		  var yui2 = Y.YUI2;
@@ -678,8 +677,10 @@ function init() {
 		      cal_dialog.render(document.body);
 		      cal_dialog.show();
 		  });
+		  /*
 		  var tabview = new Y.TabView({srcNode:'#timertab'});
 		  tabview.render();
+		  */
 		  
 		  var dataSource = new yui2.util.XHRDataSource("get-tasks?");
 		  dataSource.responseType = yui2.util.XHRDataSource.TYPE_XML;
@@ -735,23 +736,7 @@ function init() {
 		  table.subscribe("cellClickEvent", table.onEventShowCellEditor);
                   table.hideColumn(table.getColumn(4));
 
-		  var tab;
 		  Y.on('domready', function(e) {
-		      tab = new Y.Tab({
-			  label: "Chart",
-			  content: 
-			  '<center><iframe scrolling="no" height="430" width="430" id="chart-frame"></iframe></center>'
-		      });
-		      tabview.add(tab);
-		      tabview.render();
-		      $("body").css("cursor", "progress");
-		      protab = new Y.Tab({
-			  label: "Pro",
-			  content:
-			  '<div height="430"><h2>Coming soon!</h2></div>'
-		      });
-		      tabview.add(protab);
-		      tabview.render();
 		      
 		      $.ajax({
 			  type: "GET",
@@ -916,6 +901,7 @@ function init() {
 		      });
 		      calendar.render();
 		  });
+		  /*
 		  tabview.on('selectionChange', function(e) {
 		      if (e.newVal.get('label') == 'Chart')
     			  document.getElementById('chart-frame').src = 'chart.html';
@@ -925,6 +911,7 @@ function init() {
 			      { success: table.onDataReturnInitializeTable, scope: table });
 		      }
 		  });
+		  */
 		  AlertDialog = new yui2.widget.SimpleDialog("dlg1", {
 		      width: "200px",
 		      effect:{effect:yui2.widget.ContainerEffect.FADE,duration:0.15},
