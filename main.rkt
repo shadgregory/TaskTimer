@@ -196,6 +196,15 @@
        ,(if (pro? (current-username req))
             `(div ((style "text-align:center;")(id "employees_group"))
                   (p "You can enter the usernames of your employees here.")
+
+		  (div ((class "ui-widget")(style "display:none")(id "pro-msg"))
+		       (div ((class "ui-state-error ui-corner-all")) 
+				(table
+				 (tr
+				  (td (span ((class "ui-icon ui-icon-alert"))))
+				  (td (strong "Alert:"))
+				  (td (div ((id "employees-msg-div"))"You should not see this."))))))
+
                   (p (button ((type "button")(onclick "add_user();")) "Add User"))
                   (p
                    ,@(for/list ((u user-match))

@@ -58,27 +58,42 @@ function validateToken(token) {
     });
 }
 
-function check_username(username) {
-    alert("check_username " + username);
-    var return_val = false;
+function check_username(ele) {
     $.ajax({
 	url: 'get-all-users'
 	,data: null
 	,success: function(xml) {
+	    var found = false;
 	    $(xml).find("user").each(function(){
+		if(ele.value == $(this).text()) {
+		    found = true;
+		}
+	    });
+	    if (found) {
 		$.ajax({
 		    url: 'add-reportsto'
-		    ,data: {employee : username}
-		    ,success: function() {} 
+		    ,data: {employee : ele.value}
+		    ,success: function() {
+			$('#pro-msg').hide();
+			$("#employees-msg-div").text("");
+		    } 
 		});
-	    });
+	    } else {
+		$('#pro-msg').show();
+		$('#employees-msg-div').text(ele.value + " is an invalid user name.");
+		ele.value = '';
+	    }
+	}
+	,failure: function() {
+	    $('#pro-msg').show();
+	    $('#employees-msg-div').text("An error has occurred.");
 	}
     });
 }
 
 function add_user() {
     var employees_para = $(document.createElement('p')).attr("id",'employee');
-    employees_para.html('<input type="text" name="username" onchange="check_username(this.value);">');
+    employees_para.html('<input type="text" name="username" onchange="check_username(this);">');
     employees_para.appendTo("#employees_group");
 }
 
