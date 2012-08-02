@@ -67,19 +67,30 @@
      '(msg "Unpaused")
      #:mime-type #"application/xml")))
 
-(define is-pro
+(define get-all-users
+  (lambda (req)
+    (define user-match (mongo-dict-query
+                        "user"
+                        (hasheq)
+                        ))
+    (response/xexpr
+     `(users
+       ,@(for/list ((u user-match))
+           `(user
+             ,(mongo-dict-ref u 'username)))))))
+
+(define pro?
   (lambda (username)
     (define user-match (mongo-dict-query
-			"user"
-			(make-hasheq
-			 (list (cons 'username username)))
-			))
+                        "user"
+                        (make-hasheq
+                         (list (cons 'username username)))))
     (define my-user (sequence-ref user-match 0))
     (cond
-     ((bson-null? (mongo-dict-ref  my-user 'pro)) #f)
-     (else
-      (mongo-dict-ref my-user 'pro))
-     )))
+      ((bson-null? (mongo-dict-ref  my-user 'pro)) #f)
+      (else
+       (mongo-dict-ref my-user 'pro))
+      )))
 
 (define get-paused-time
   (lambda (req)
@@ -165,24 +176,35 @@
                                
                                (td (div ((style "font-weight:bold")(id ,(string-append "timer_" (mongo-dict-ref t 'starttime)))) " ")))
                            (script ((type "text/javascript"))
-                                   ,(string-append "start_timer(" (mongo-dict-ref t 'starttime) ");"))))));div
-     )))
+                                   ,(string-append "start_timer(" (mongo-dict-ref t 'starttime) ");")))))))))
 
 (define graphs
   (lambda (req)
     (response/xexpr
      '(p ((style "text-align:center;"))
-       (img ((src "graph-tasks"))))
-     )
-    )
-  )
+         (img ((src "graph-tasks")))))))
 
 (define pro-page
   (lambda (req)
+    (define user-match
+      (mongo-dict-query
+       "user"
+       (make-hasheq
+        (list (cons 'reportsto (current-username req))))))
     (response/xexpr
-     `(div)
-     )
-    ))
+     `(div
+       ,(if (pro? (current-username req))
+            `(div ((style "text-align:center;")(id "employees_group"))
+                  (p "You can enter the usernames of your employees here.")
+                  (p (button ((type "button")(onclick "add_user();")) "Add User"))
+                  (p
+                   ,@(for/list ((u user-match))
+                       `(p 
+                         (input 
+                          ((type "text")
+                           (name "username")
+                           (value ,(mongo-dict-ref u 'username))))))))
+            '(p "Please contact us at sales AT tommywindich DOT com."))))))
 
 (define timer-page
   (lambda (req)
@@ -208,7 +230,7 @@
              (head
               (title ,(string-append "Tommy Windich - " username))
               (link ((type "text/css")(rel "stylesheet")(href "fonts-min.css"))" ")
-              (link ((rel "stylesheet") (href "development-bundle/themes/redmond/jquery.ui.all.css")) " ")
+              (link ((rel "stylesheet") (href "development-bundle/themes/mint-choc/jquery.ui.all.css")) " ")
               (script ((type "text/javascript")(src "tasktimer.js")) " ")
               (script ((src "yui/build/yui/yui.js")(charset "utf-8"))" ")
               (script ((src "yui/build/loader/loader.js")(charset "utf-8"))" ")
@@ -243,13 +265,12 @@
                                   (li (a ((href "#cal")) "Calendar"))
                                   (li (a ((href "#datatable")) "Data"))
                                   (li (a ((href "graphs")) "Charts"))
-                                  (li (a ((href "#pro")) "Pro"))
+                                  (li (a ((href "pro-page")) "Pro"))
                                   )
                                  (div ((style "min-height:430px")(id "cal"))"")
                                  (div ((style "min-height:430px;")(id "datatable"))
                                       (div ((id "pg")) " ")
                                       (div ((id "all-tasks"))))
-                                 (div ((height "430")(id "pro"))(h2 "Coming soon!"))
                                  )
                             );td
                            );tr
@@ -381,21 +402,21 @@
           (total 0))
       (for/list ((t task-match))
         (set! total (/(/(/(+ (- (string->number (mongo-dict-ref t 'endtime))
-				    (string->number (mongo-dict-ref t 'starttime))
-				    ) total) 1000)60)60)))
+                                (string->number (mongo-dict-ref t 'starttime))
+                                ) total) 1000)60)60)))
       total)))
 
 (define get-categories-vector
   (lambda (username)
     (let
         ((task-match (mongo-dict-query
-                     "task"
-                     (make-hasheq
-                      (list (cons 'username username)))))
-      (hash (make-hash '())))
+                      "task"
+                      (make-hasheq
+                       (list (cons 'username username)))))
+         (hash (make-hash '())))
       (for/list ((t task-match))
         (dict-set! hash (mongo-dict-ref t 'category) (get-total-hours username (mongo-dict-ref t 'category))))
-        
+      
       hash
       )
     ))
@@ -417,7 +438,9 @@
                          (list (cons 'username (current-username req)))))))
       (response/xexpr
        `(tasks
-         ,@(for/list ((t (mongo-dict-query "task" (hasheq))))
+         ,@(for/list ((t (mongo-dict-query "task" 
+                                           (make-hasheq 
+                                            (list (cons 'username (current-username req)))))))
              (if (and 
                   (string? (task-starttime t))
                   (string? (task-endtime t))
@@ -438,6 +461,7 @@
              );for/list
          ) ;tasks
        #:mime-type #"application/xml"))))
+
 
 (define get-employees
   (lambda (req)
@@ -581,6 +605,20 @@
     (response/xexpr
      '(msg "EndTime Updated")
      #:mime-type #"application/xml")))
+
+(define add-reportsto
+  (lambda (req)
+    (let*
+        ((bindings (request-bindings req))
+         (employee (extract-binding/single 'employee bindings)))
+      (set-user-reportsto! (sequence-ref (mongo-dict-query
+                                          "user"
+                                          (make-hasheq
+                                           (list
+                                            (cons 'username employee))))
+                                         0) (current-username req)))
+    (response/xexpr
+     '(msg "success"))))
 
 (define update-comment
   (lambda (req)
@@ -779,10 +817,10 @@
       (convert
        (plot
         (list
-	 (discrete-histogram
-	  (hash-to-vectorlist (get-categories-vector (current-username req)))
-	  #:label "Hours per category")
-       ))
+         (discrete-histogram
+          (hash-to-vectorlist (get-categories-vector (current-username req)))
+          #:label "Hours per category")
+         ))
        'png-bytes)))))
 
 (define save-task
@@ -849,6 +887,9 @@
    (("unpause") unpause)
    (("oauth-user") oauth-user)
    (("tasks-page") tasks-page)
+   (("pro-page") pro-page)
+   (("get-all-users") get-all-users)
+   (("add-reportsto") add-reportsto)
    (("timer") timer-page)))
 
 (define s1

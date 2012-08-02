@@ -58,6 +58,30 @@ function validateToken(token) {
     });
 }
 
+function check_username(username) {
+    alert("check_username " + username);
+    var return_val = false;
+    $.ajax({
+	url: 'get-all-users'
+	,data: null
+	,success: function(xml) {
+	    $(xml).find("user").each(function(){
+		$.ajax({
+		    url: 'add-reportsto'
+		    ,data: {employee : username}
+		    ,success: function() {} 
+		});
+	    });
+	}
+    });
+}
+
+function add_user() {
+    var employees_para = $(document.createElement('p')).attr("id",'employee');
+    employees_para.html('<input type="text" name="username" onchange="check_username(this.value);">');
+    employees_para.appendTo("#employees_group");
+}
+
 function getUserInfo() {
     $.ajax({
         url: 'https://www.googleapis.com/oauth2/v1/userinfo?access_token=' + acToken,
