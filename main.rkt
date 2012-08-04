@@ -71,8 +71,7 @@
   (lambda (req)
     (define user-match (mongo-dict-query
                         "user"
-                        (hasheq)
-                        ))
+                        (hasheq)))
     (response/xexpr
      `(users
        ,@(for/list ((u user-match))
@@ -89,8 +88,7 @@
     (cond
       ((bson-null? (mongo-dict-ref  my-user 'pro)) #f)
       (else
-       (mongo-dict-ref my-user 'pro))
-      )))
+       (mongo-dict-ref my-user 'pro)))))
 
 (define reportsto-verified?
   (lambda (username)
@@ -100,13 +98,13 @@
                          (list (cons 'username username)))))
     (define my-user (sequence-ref user-match 0))
     (cond
-      ((bson-null? (mongo-dict-ref  my-user 'reportsto-verified)) #f)
+      ((bson-null? (mongo-dict-ref my-user 'reportsto)) #t)
+      ((bson-null? (mongo-dict-ref  my-user 'reportsto_verified)) #f)
       (else
        (and 
-	(not (bson-null? 
-	       (mongo-dict-ref my-user 'reportsto)))
-	(not (mongo-dict-ref my-user 'reportsto-verified))
-	)))))
+        (not (bson-null? 
+              (mongo-dict-ref my-user 'reportsto)))
+        (not (mongo-dict-ref my-user 'reportsto_verified)))))))
 
 (define get-paused-time
   (lambda (req)
@@ -212,15 +210,15 @@
        ,(if (pro? (current-username req))
             `(div ((style "text-align:center;")(id "employees_group"))
                   (p "You can enter the usernames of your employees here.")
-
-		  (div ((class "ui-widget")(style "display:none")(id "pro-msg"))
-		       (div ((class "ui-state-error ui-corner-all")) 
-				(table
-				 (tr
-				  (td (span ((class "ui-icon ui-icon-alert"))))
-				  (td (strong "Alert:"))
-				  (td (div ((id "employees-msg-div"))"You should not see this."))))))
-
+                  
+                  (div ((class "ui-widget")(style "display:none")(id "pro-msg"))
+                       (div ((class "ui-state-error ui-corner-all")) 
+                            (table
+                             (tr
+                              (td (span ((class "ui-icon ui-icon-alert"))))
+                              (td (strong "Alert:"))
+                              (td (div ((id "employees-msg-div"))"You should not see this."))))))
+                  
                   (p (button ((type "button")(onclick "add_user();")) "Add User"))
                   (p
                    ,@(for/list ((u user-match))
@@ -247,9 +245,9 @@
              cookies))
     (define verify-string
       (cond
-       ((reportsto-verified? (current-username req)) "verify = false;")
-       (else
-	"verify = true;")))
+        ((reportsto-verified? (current-username req)) "verify = false;")
+        (else
+         "verify = true;")))
     (if id-cookie
         (let ((username (current-username req)))
           (if (string=? username "baduser")
@@ -279,14 +277,16 @@
              (body ((link "#000000")(alink "#000000")(vlink "#000000")
                                     (class "yui3-skin-sam yui-skin-sam")
                                     (bgcolor "#228B22"))
-		   (div ((style "display:none")(id "dialog-confirm") (title "Confirm"))
-			(p
-			 (span
-			  ((id "message-span")
-			   (class "ui-icon ui-icon-alert")
-			   (style "float:left; margin:0 7px 20px 0;"))
-			  "Message goes here")))
-
+                   (div ((style "display:none")
+			 (id "dialog-confirm")
+			 (title "Confirm Manager"))
+                        (p
+                         (span
+                          ((id "message-span")
+                           (class "ui-icon ui-icon-alert")
+                           (style "float:left; margin:0 7px 20px 0;"))
+                          "Message goes here")))
+                   
                    (table ((style "margin-left:auto;margin-right:auto;"))
                           (tr
                            (td
@@ -315,8 +315,8 @@
                                       (div ((id "pg")) " ")
                                       (div ((id "all-tasks"))))))))
                    (script ((type "text/javascript")) ,(string-append "var verify = false;"
-								      verify-string
-								      "init(verify);"))
+                                                                      verify-string
+                                                                      "init(verify);"))
                    ))))
         (redirect-to "/?msg=baduser"))))
 
@@ -361,8 +361,8 @@
       ((new-user? username)
        (make-user #:username username
                   #:cookieid cookieid
-		  #:reportsto-verified #f
-		  #:pro #f
+                  #:reportsto_verified #f
+                  #:pro #f
                   #:password (md5 password))
        #t)
       (else
@@ -443,11 +443,11 @@
           (total 0))
       (for/list ((t task-match))
         (if (mongo-dict-ref t 'starttime)
-        (set! total (/(/(/(+ (- (string->number (mongo-dict-ref t 'endtime))
-                                (string->number (mongo-dict-ref t 'starttime))
-                                ) total) 1000)60)60))
-        (list)
-        ))
+            (set! total (/(/(/(+ (- (string->number (mongo-dict-ref t 'endtime))
+                                    (string->number (mongo-dict-ref t 'starttime))
+                                    ) total) 1000)60)60))
+            (list)
+            ))
       total)))
 
 (define get-categories-vector
@@ -655,9 +655,9 @@
     (let*
         ((bindings (request-bindings req))
          (employee (extract-binding/single 'employee bindings))
-	 (user-obj (sequence-ref (mongo-dict-query "user" (make-hasheq (list (cons 'username employee))))0)))
+         (user-obj (sequence-ref (mongo-dict-query "user" (make-hasheq (list (cons 'username employee))))0)))
       (set-user-reportsto! user-obj (current-username req))
-      (set-user-reportsto-verified! user-obj #f))
+      (set-user-reportsto_verified! user-obj #f))
     (response/xexpr
      '(msg "success"))))
 
@@ -744,8 +744,8 @@
     (define cookieid (number->string (random 4294967087)))
     (if (= (length user-match) 0)
         (make-user #:username username
-		   #:reportsto-verified #f
-		   #:pro #f
+                   #:reportsto_verified #f
+                   #:pro #f
                    #:cookieid cookieid)
         (mongo-dict-set! (car user-match) 'cookieid cookieid))
     (response/xexpr

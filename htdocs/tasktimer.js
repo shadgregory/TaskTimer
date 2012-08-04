@@ -592,8 +592,6 @@ function init(verify) {
 	});	
     }
 
-
-
     YUI().use("yui2-datatable",
 	      "yui2-paginator",
 	      "yui2-connection",

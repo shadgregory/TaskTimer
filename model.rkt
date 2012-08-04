@@ -23,6 +23,7 @@
   ((username #:required)
    (cookieid)
    (reportsto)
+   (reportsto_verified)
    (max-users)
    (pro)
    (password)))
