@@ -92,6 +92,22 @@
        (mongo-dict-ref my-user 'pro))
       )))
 
+(define reportsto-verified?
+  (lambda (username)
+    (define user-match (mongo-dict-query
+                        "user"
+                        (make-hasheq
+                         (list (cons 'username username)))))
+    (define my-user (sequence-ref user-match 0))
+    (cond
+      ((bson-null? (mongo-dict-ref  my-user 'reportsto-verified)) #f)
+      (else
+       (and 
+	(not (bson-null? 
+	       (mongo-dict-ref my-user 'reportsto)))
+	(not (mongo-dict-ref my-user 'reportsto-verified))
+	)))))
+
 (define get-paused-time
   (lambda (req)
     (define bindings (request-bindings req))
@@ -229,6 +245,11 @@
       (findf (lambda (c)
                (string=? "id" (client-cookie-name c)))
              cookies))
+    (define verify-string
+      (cond
+       ((reportsto-verified? (current-username req)) "verify = false;")
+       (else
+	"verify = true;")))
     (if id-cookie
         (let ((username (current-username req)))
           (if (string=? username "baduser")
@@ -243,16 +264,29 @@
               (script ((type "text/javascript")(src "tasktimer.js")) " ")
               (script ((src "yui/build/yui/yui.js")(charset "utf-8"))" ")
               (script ((src "yui/build/loader/loader.js")(charset "utf-8"))" ")
-              (script ((type "text/javascript")(src "jquery-1.7.1.min.js")) " ")
+              (script ((src "development-bundle/jquery-1.7.2.js")) " ")
               (script ((src "development-bundle/ui/jquery.ui.core.js")) " ")
               (script ((src "development-bundle/ui/jquery.ui.widget.js")) " ")
               (script ((src "development-bundle/ui/jquery.ui.tabs.js")) " ")
+              (script ((src "development-bundle/ui/jquery.ui.mouse.js")) " ")
+              (script ((src "development-bundle/ui/jquery.ui.button.js")) " ")
+              (script ((src "development-bundle/ui/jquery.ui.draggable.js")) " ")
+              (script ((src "development-bundle/ui/jquery.ui.position.js")) " ")
+              (script ((src "development-bundle/ui/jquery.ui.dialog.js")) " ")
               (link ((type "text/css")(rel "stylesheet")(href "tasktimer.css")) " ")
               (script ((type "text/javascript"))"$(function(){$('#tabs').tabs();});"))
              
              (body ((link "#000000")(alink "#000000")(vlink "#000000")
                                     (class "yui3-skin-sam yui-skin-sam")
                                     (bgcolor "#228B22"))
+		   (div ((style "display:none")(id "dialog-confirm") (title "Confirm"))
+			(p
+			 (span
+			  ((id "message-span")
+			   (class "ui-icon ui-icon-alert")
+			   (style "float:left; margin:0 7px 20px 0;"))
+			  "Message goes here")))
+
                    (table ((style "margin-left:auto;margin-right:auto;"))
                           (tr
                            (td
@@ -279,16 +313,12 @@
                                  (div ((style "min-height:430px")(id "cal"))"")
                                  (div ((style "min-height:430px;")(id "datatable"))
                                       (div ((id "pg")) " ")
-                                      (div ((id "all-tasks"))))
-                                 )
-                            );td
-                           );tr
-                          );table
-                   (script ((type "text/javascript")) "init();")
+                                      (div ((id "all-tasks"))))))))
+                   (script ((type "text/javascript")) ,(string-append "var verify = false;"
+								      verify-string
+								      "init(verify);"))
                    ))))
-        (redirect-to "/?msg=baduser"))
-    );lambda
-  )
+        (redirect-to "/?msg=baduser"))))
 
 (define get-msg
   (lambda (request)
@@ -331,6 +361,8 @@
       ((new-user? username)
        (make-user #:username username
                   #:cookieid cookieid
+		  #:reportsto-verified #f
+		  #:pro #f
                   #:password (md5 password))
        #t)
       (else
@@ -410,9 +442,12 @@
              (list (cons 'category category) (cons 'username username)))))
           (total 0))
       (for/list ((t task-match))
+        (if (mongo-dict-ref t 'starttime)
         (set! total (/(/(/(+ (- (string->number (mongo-dict-ref t 'endtime))
                                 (string->number (mongo-dict-ref t 'starttime))
-                                ) total) 1000)60)60)))
+                                ) total) 1000)60)60))
+        (list)
+        ))
       total)))
 
 (define get-categories-vector
@@ -619,13 +654,10 @@
   (lambda (req)
     (let*
         ((bindings (request-bindings req))
-         (employee (extract-binding/single 'employee bindings)))
-      (set-user-reportsto! (sequence-ref (mongo-dict-query
-                                          "user"
-                                          (make-hasheq
-                                           (list
-                                            (cons 'username employee))))
-                                         0) (current-username req)))
+         (employee (extract-binding/single 'employee bindings))
+	 (user-obj (sequence-ref (mongo-dict-query "user" (make-hasheq (list (cons 'username employee))))0)))
+      (set-user-reportsto! user-obj (current-username req))
+      (set-user-reportsto-verified! user-obj #f))
     (response/xexpr
      '(msg "success"))))
 
@@ -712,6 +744,8 @@
     (define cookieid (number->string (random 4294967087)))
     (if (= (length user-match) 0)
         (make-user #:username username
+		   #:reportsto-verified #f
+		   #:pro #f
                    #:cookieid cookieid)
         (mongo-dict-set! (car user-match) 'cookieid cookieid))
     (response/xexpr

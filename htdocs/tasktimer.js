@@ -551,7 +551,7 @@ function addNewRule(ruleSet, path, ruleName) {
     var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
 })();
 
-function init() {
+function init(verify) {
     YUI_config = {
 	combine: false,
 	filter: "raw",
@@ -575,6 +575,23 @@ function init() {
 	    }
 	}
     };
+    if (verify) {
+	$("#message-span").text("Message");
+	$( "#dialog-confirm" ).dialog({
+	    resizable: false,
+	    height:140,
+	    modal: true,
+	    buttons: {
+		"Confirm": function() {
+		    $( this ).dialog( "close" );
+		},
+		Cancel: function() {
+		    $( this ).dialog( "close" );
+		}
+	    }
+	});	
+    }
+
 
 
     YUI().use("yui2-datatable",
