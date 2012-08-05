@@ -551,7 +551,7 @@ function addNewRule(ruleSet, path, ruleName) {
     var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
 })();
 
-function init(verify) {
+function init(verify, reportsto) {
     YUI_config = {
 	combine: false,
 	filter: "raw",
@@ -576,16 +576,26 @@ function init(verify) {
 	}
     };
     if (verify) {
-	$("#message-span").text("Message");
+	$("#message-p").text("Do you report to " + reportsto + "?");
 	$( "#dialog-confirm" ).dialog({
 	    resizable: false,
-	    height:140,
+	    height:150,
 	    modal: true,
 	    buttons: {
-		"Confirm": function() {
+		"Yes": function() {
+		    $.ajax({
+			url: "confirm-reportsto"
+			,context: document.body
+			,data : null
+		    });
 		    $( this ).dialog( "close" );
 		},
-		Cancel: function() {
+		"No": function() {
+		    $.ajax({
+			url: "noconfirm-reportsto"
+			,context: document.body
+			,data : null
+		    });
 		    $( this ).dialog( "close" );
 		}
 	    }
@@ -988,3 +998,4 @@ function init(verify) {
 		  };
 	      });
 }
+

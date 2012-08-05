@@ -78,6 +78,41 @@
            `(user
              ,(mongo-dict-ref u 'username)))))))
 
+(define confirm-reportsto
+  (lambda (req)
+    (define user-match (mongo-dict-query
+                        "user"
+                        (make-hasheq
+                         (list (cons 'username (current-username req))))))
+    (define my-user (sequence-ref user-match 0))
+    (set-user-reportsto_verified! my-user #t)
+    (response/xexpr
+     '(msg "success"))))
+
+(define noconfirm-reportsto
+  (lambda (req)
+    (define user-match (mongo-dict-query
+                        "user"
+                        (make-hasheq
+                         (list (cons 'username (current-username req))))))
+    (define my-user (sequence-ref user-match 0))
+    (set-user-reportsto_verified! my-user #f)
+    (set-user-reportsto! my-user "")
+    (response/xexpr
+     '(msg "success"))))
+
+(define reportsto
+  (lambda (username)
+    (define user-match (mongo-dict-query
+                        "user"
+                        (make-hasheq
+                         (list (cons 'username username)))))
+    (define my-user (sequence-ref user-match 0))
+    (cond
+      ((bson-null? (mongo-dict-ref  my-user 'reportsto)) "")
+      (else
+       (mongo-dict-ref my-user 'reportsto)))))
+
 (define pro?
   (lambda (username)
     (define user-match (mongo-dict-query
@@ -99,12 +134,11 @@
     (define my-user (sequence-ref user-match 0))
     (cond
       ((bson-null? (mongo-dict-ref my-user 'reportsto)) #t)
+      ((string=? (mongo-dict-ref my-user 'reportsto)) "")
+      ((boolean=? (mongo-dict-ref my-user 'reportsto_verified) #t) #t)
       ((bson-null? (mongo-dict-ref  my-user 'reportsto_verified)) #f)
       (else
-       (and 
-        (not (bson-null? 
-              (mongo-dict-ref my-user 'reportsto)))
-        (not (mongo-dict-ref my-user 'reportsto_verified)))))))
+       (mongo-dict-ref my-user 'reportsto_verified)))))
 
 (define get-paused-time
   (lambda (req)
@@ -278,14 +312,12 @@
                                     (class "yui3-skin-sam yui-skin-sam")
                                     (bgcolor "#228B22"))
                    (div ((style "display:none")
-			 (id "dialog-confirm")
-			 (title "Confirm Manager"))
-                        (p
-                         (span
-                          ((id "message-span")
-                           (class "ui-icon ui-icon-alert")
-                           (style "float:left; margin:0 7px 20px 0;"))
-                          "Message goes here")))
+                         (id "dialog-confirm")
+                         (title "Confirm Manager"))
+                        (p ((id "message-p"))
+                           (span ((class "ui-icon ui-icon-alert")
+                                  (style "float:left; margin:0 7px 20px 0;")))
+                           "Message goes here"))
                    
                    (table ((style "margin-left:auto;margin-right:auto;"))
                           (tr
@@ -315,8 +347,11 @@
                                       (div ((id "pg")) " ")
                                       (div ((id "all-tasks"))))))))
                    (script ((type "text/javascript")) ,(string-append "var verify = false;"
+                                                                      "var reportsto = \""
+                                                                      (reportsto (current-username req))
+                                                                      "\";"
                                                                       verify-string
-                                                                      "init(verify);"))
+                                                                      "init(verify, reportsto);"))
                    ))))
         (redirect-to "/?msg=baduser"))))
 
@@ -705,8 +740,7 @@
         (script ((type "text/javascript")(src "jquery-1.7.1.min.js")) " ")
         (script ((src "yui/build/yui/yui.js")(charset "utf-8"))" ")
         (script ((type "text/javascript"))
-                "var url = document.URL; expiresIn = gup(url, 'expires_in');tokenType = gup(url, 'token_type');acToken = gup(url, 'access_token');validateToken(acToken);")
-        )
+                "var url = document.URL; expiresIn = gup(url, 'expires_in');tokenType = gup(url, 'token_type');acToken = gup(url, 'access_token');validateToken(acToken);"))
        (body ((link "#000000")(bgcolor "#228B22"))
              (div ((id "center_content"))
                   ,(banner)
@@ -838,14 +872,7 @@
                                       (a ((href "https://accounts.google.com/o/oauth2/auth?scope=https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.email+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.profile&state=%2Fprofile&redirect_uri=https%3A%2F%2Ftommywindich.com/oauth2callback&response_type=token&client_id=21849082230.apps.googleusercontent.com")(class "zocial google")(style "font-size:13px;")) "Sign in with Google"))
                                      (td ((width "1")(bgcolor "787878"))(br))
                                      (td
-                                      (g:plusone ((annotations "inline"))))
-                                     );tr
-                                    );table
-                             );dive
-                        ))))))))
-
-(define APPLICATION/JSON-MIME-TYPE
-  (string->bytes/utf-8 "application/json; charset=utf-8"))
+                                      (g:plusone ((annotations "inline")))))))))))))))
 
 (define graph-tasks
   (lambda (req)    
@@ -931,6 +958,8 @@
    (("oauth-user") oauth-user)
    (("tasks-page") tasks-page)
    (("pro-page") pro-page)
+   (("confirm-reportsto") confirm-reportsto)
+   (("noconfirm-reportsto") noconfirm-reportsto)
    (("get-all-users") get-all-users)
    (("add-reportsto") add-reportsto)
    (("timer") timer-page)))
