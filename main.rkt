@@ -134,7 +134,7 @@
     (define my-user (sequence-ref user-match 0))
     (cond
       ((bson-null? (mongo-dict-ref my-user 'reportsto)) #t)
-      ((string=? (mongo-dict-ref my-user 'reportsto)) "")
+      ((string=? (mongo-dict-ref my-user 'reportsto) "") #t)
       ((boolean=? (mongo-dict-ref my-user 'reportsto_verified) #t) #t)
       ((bson-null? (mongo-dict-ref  my-user 'reportsto_verified)) #f)
       (else
