@@ -24,7 +24,7 @@
    (cookieid)
    (reportsto)
    (reportsto_verified)
-   (max-users)
+   (max_users)
    (pro)
    (password)))
 
