@@ -1,0 +1,76 @@
+<html>
+  <head>
+    <script src="yui/build/yui/yui.js" charset="utf-8"></script>
+    <script src="yui/build/loader/loader.js" charset="utf-8"></script>
+    <script type="text/javascript" src="jquery-1.7.1.min.js"></script>
+    <style scoped>
+      #mychart {
+      margin:10px 10px 10px 10px;
+      width: 400px;
+      height:400px;
+      }
+    </style>
+  </head>
+  <body class="yui3-skin-sam">
+    <div id="mychart"></div>
+    <script type="text/javascript">
+      (function() {
+        YUI().use('charts', 'io-base', function (Y) { 
+
+        if (window.XMLHttpRequest) {
+          xmlhttp=new XMLHttpRequest();
+        } else {
+          xmlhttp=new ActiveXObject("Microsoft.XMLHTTP");
+        }
+        xmlhttp.open("GET","get-tasks",false);
+        xmlhttp.send();
+        xmlDoc=xmlhttp.responseXML; 
+        if (!xmlDoc)
+          return false;
+        var tasks = xmlDoc.getElementsByTagName("task");
+        var myDataValues = new Array();
+
+        for (i=0;i<tasks.length;i++) {
+          var category = tasks[i].getElementsByTagName("category")[0];
+          var value = tasks[i].getElementsByTagName("hours")[0];
+          var exists = false;
+          for(j=0;j<myDataValues.length;j++) {
+            if (myDataValues[j].category == category.firstChild.nodeValue) {
+                myDataValues[j].hours += parseFloat(value.firstChild.nodeValue);
+                exists = true;
+                break;
+            }
+          }   
+          if (!exists)
+            myDataValues.push({"category":category.firstChild.nodeValue, "hours":parseFloat(value.firstChild.nodeValue)});
+        }
+        var myTooltip = {
+					     styles : {
+					     backgroundColor: "#ffffff",
+					     color: "#000000",
+					     borderColor: "#fff",
+					     textAlign: "center"
+
+
+	    }
+	};
+
+        var pieGraph = new Y.Chart({
+            render:"#mychart", 
+            categoryKey:"category",
+            seriesKeys:["hours"], 
+            dataProvider:myDataValues, 
+            type:"pie",
+            tooltip: myTooltip,
+            seriesCollection:[
+                {
+                    categoryKey:"category",
+                    valueKey:"hours"
+                }
+            ]
+        });
+       });
+     })();
+        </script>
+    </body>
+</html>
