@@ -107,11 +107,23 @@
                         "user"
                         (make-hasheq
                          (list (cons 'username username)))))
-    (define my-user (sequence-ref user-match 0))
-    (cond
-      ((bson-null? (mongo-dict-ref  my-user 'reportsto)) "")
-      (else
-       (mongo-dict-ref my-user 'reportsto)))))
+     	 (let ((my-user (sequence-ref user-match 0)))
+	(cond
+	 ((bson-null? (mongo-dict-ref  my-user 'reportsto)) "")
+	 (else
+	  (mongo-dict-ref my-user 'reportsto))))))
+
+(define max_users
+  (lambda (username)
+    (define user-match (mongo-dict-query
+                        "user"
+                        (make-hasheq
+                         (list (cons 'username username)))))
+      (let ((my-user (sequence-ref user-match 0)))
+	(cond
+	 ((bson-null? (mongo-dict-ref  my-user 'max_users)) #f)
+	 (else
+	  (mongo-dict-ref my-user 'max_users))))))
 
 (define pro?
   (lambda (username)
@@ -253,7 +265,7 @@
                               (td (strong "Alert:"))
                               (td (div ((id "employees-msg-div"))"You should not see this."))))))
                   
-                  (p (button ((type "button")(onclick "add_user();")) "Add User"))
+                  (p (button ((type "button")(onclick ,(string-append "add_user(" (number->string (max_users (current-username req))) ");"))) "Add User"))
                   (p
                    ,@(for/list ((u user-match))
                        `(p 
@@ -261,7 +273,37 @@
                           ((type "text")
                            (name "username")
                            (value ,(mongo-dict-ref u 'username))))))))
-            '(p "Please contact us at sales AT tommywindich DOT com."))))))
+	    `(div
+	      (p "If you are an employer, you may purchase employee accounts from PayPal.")
+	      (p 
+	       (form (
+		      (action "https://www.paypal.com/cgi-bin/webscr") ;the real deal
+		      ;(action "https://www.sandbox.paypal.com/cgi-bin/webscr") ;sandbox
+		      ( method "post"))
+		     (input ((type "hidden")(name "cmd") (value "_s-xclick")))
+		     (input ((type "hidden")(name "hosted_button_id")(value "UHC2YD9JKFEVG"))) ;the real deal
+;		     (input ((type "hidden")(name "hosted_button_id")(value "WT7HM97MRFEJL"))) ;sandbox
+		     (input ((type "hidden")(name "tw_username")(value ,(current-username req))))
+		     (input ((type "hidden")(name "notify_url")(value "https://tommywindich.com/process-payment")))
+		     (input ((type "hidden")(name "image_url")(value "https://tommywindich.com/tw_small.png")))
+		     (input ((type "image")(src "https://www.paypalobjects.com/en_US/i/btn/btn_buynowCC_LG.gif")(border "0")(name "submit")(alt "PayPal - The safer, easier way to pay online!")))
+		     (img ((alt "")(border "0")(src "https://www.paypalobjects.com/en_US/i/scr/pixel.gif")(width "1")(height "1"))))
+	       )
+))))))
+
+(define process-payment
+  (lambda (req)
+    (define bindings (request-bindings req))
+    (define username (extract-binding/single 'tw_username bindings))
+    (define quantity (extract-binding/single 'quantity bindings))
+    (define user-obj (sequence-ref (mongo-dict-query
+				    "user"
+				    (make-hasheq (list (cons 'username username))))0))
+    (set-user-pro! user-obj #t)
+    (set-user-max_users! user-obj (+ (string->number quantity)
+				     (user-max_users user-obj)))
+    (response/xexpr
+     '(msg "notified"))))
 
 (define timer-page
   (lambda (req)
@@ -288,6 +330,7 @@
               (redirect-to "/?msg=baduser")
               '())
           (response/xexpr
+           #:preamble #"<!DOCTYPE html>"
            `(html
              (head
               (title ,(string-append "Tommy Windich - " username))
@@ -306,7 +349,8 @@
               (script ((src "development-bundle/ui/jquery.ui.position.js")) " ")
               (script ((src "development-bundle/ui/jquery.ui.dialog.js")) " ")
               (link ((type "text/css")(rel "stylesheet")(href "tasktimer.css")) " ")
-              (script ((type "text/javascript"))"$(function(){$('#tabs').tabs();});"))
+              (script ((type "text/javascript"))"$(function(){$('#tabs').tabs();});")
+	      )
              
              (body ((link "#000000")(alink "#000000")(vlink "#000000")
                                     (class "yui3-skin-sam yui-skin-sam")
@@ -338,14 +382,18 @@
                                  (ul
                                   (li (a ((href "tasks-page")) "Create Tasks"))
                                   (li (a ((href "#cal")) "Calendar"))
-                                  (li (a ((href "#datatable")) "Data"))
-                                  (li (a ((href "graphs")) "Charts"))
+;                                  (li (a ((href "#datatable")) "Data"))
+                                  (li (a ((href "chart.html")) "Charts"))
                                   (li (a ((href "pro-page")) "Pro"))
                                   )
                                  (div ((style "min-height:430px")(id "cal"))"")
-                                 (div ((style "min-height:430px;")(id "datatable"))
-                                      (div ((id "pg")) " ")
-                                      (div ((id "all-tasks"))))))))
+;                                 (div ((style "min-height:430px;")(id "datatable"))
+;                                      (div ((id "pg")) " ")
+;                                      (div ((id "all-tasks"))))
+				 )
+			    )
+			   )
+			  )
                    (script ((type "text/javascript")) ,(string-append "var verify = false;"
                                                                       "var reportsto = \""
                                                                       (reportsto (current-username req))
@@ -398,6 +446,7 @@
                   #:cookieid cookieid
                   #:reportsto_verified #f
                   #:pro #f
+                  #:max_users 0
                   #:password (md5 password))
        #t)
       (else
@@ -780,6 +829,7 @@
         (make-user #:username username
                    #:reportsto_verified #f
                    #:pro #f
+		   #:max_users 0
                    #:cookieid cookieid)
         (mongo-dict-set! (car user-match) 'cookieid cookieid))
     (response/xexpr
@@ -957,6 +1007,7 @@
    (("unpause") unpause)
    (("oauth-user") oauth-user)
    (("tasks-page") tasks-page)
+   (("process-payment") process-payment)
    (("pro-page") pro-page)
    (("confirm-reportsto") confirm-reportsto)
    (("noconfirm-reportsto") noconfirm-reportsto)
@@ -973,10 +1024,9 @@
          (url->string
           (struct-copy url (request-uri req)
                        [scheme "https"]
-                       ;[host "tommywindich.com"]
-                       [host "localhost"]
-                       [port 8081]))))
-      #:port 8080
+                       [host "tommywindich.com"]
+                       [port 443]))))
+      #:port 80
       #:listen-ip #f
       #:quit? #f
       #:ssl? #f
@@ -987,16 +1037,15 @@
   (thread
    (lambda ()
      (serve/servlet start
-                    #:launch-browser? #t
+                    #:launch-browser? #f
                     #:quit? #f
                     #:ssl? #t
                     #:listen-ip #f
-                    #:port 8081
-                    ;#:ssl-cert (build-path "/etc/ssl/localcerts" "combined.crt")
-                    #:ssl-cert (build-path "./server-cert.pem")
-                    ;#:ssl-key (build-path "/etc/ssl/localcerts" "www.tommywindich.com.key")
-                    #:ssl-key (build-path "./private-key.pem")
+                    #:port 443
+                    #:ssl-cert (build-path "/etc/ssl/localcerts" "combined.crt")
+                    #:ssl-key (build-path "/etc/ssl/localcerts" "www.tommywindich.com.key")
                     #:servlet-regexp #rx""
+		    #:log-file "tommywindich.log"
                     #:extra-files-paths (list 
                                          (build-path "./htdocs"))
                     #:servlet-path ""))))
