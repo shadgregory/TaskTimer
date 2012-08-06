@@ -91,7 +91,10 @@ function check_username(ele) {
     });
 }
 
-function add_user() {
+function add_user(max) {
+    var n = $("#employees_group input").length;
+    if (n == max)
+	return;
     var employees_para = $(document.createElement('p')).attr("id",'employee');
     employees_para.html('<input type="text" name="username" onchange="check_username(this);">');
     employees_para.appendTo("#employees_group");
@@ -789,6 +792,7 @@ function init(verify, reportsto) {
 		       label:"Date"},
 		      {key:"bsonid",locator:"*[local-name()='bsonid']"}
 		  ];
+		  /*
 		  var table = new yui2.widget.DataTable(
 		      "all-tasks", 
 		      cols, 
@@ -799,6 +803,7 @@ function init(verify, reportsto) {
 		       })});
 		  table.subscribe("cellClickEvent", table.onEventShowCellEditor);
                   table.hideColumn(table.getColumn(4));
+		  */
 
 		  Y.on('domready', function(e) {
 		      
@@ -822,6 +827,7 @@ function init(verify, reportsto) {
 					  var verified = false;
 					  if ($(this).find('verified').text() == 'T')
 					      verified = true;
+					  console.log("verified ", verified);
 					  var d = new Date(parseInt($(this).find('endtime').text()));
 					  var y = d.getFullYear();
 					  var m = d.getMonth();
@@ -885,7 +891,8 @@ function init(verify, reportsto) {
 				      ),{
 				      responseType : yui2.util.DataSource.TYPE_JSARRAY,
 				      responseSchema : {
-					  fields : [{key:'Verified',parser:yui2.util.DataSource.parseBoolean}
+					  fields : [
+				  			{key:'Verified',parser:yui2.util.DataSource.parseBoolean}
 						    ,{key:'Date',parser:"date"}
 						    ,{key:'Hours',parser:"number"}
 						    ,{key:'Bsonid',hidden:true}
@@ -916,7 +923,7 @@ function init(verify, reportsto) {
 				  dataTable = new yui2.widget.DataTable(
 				      "datatable",
 				      [
-					  {key:"Verify",formatter:"checkbox", resizeable:true},
+					  {key:"Verified",formatter:"checkbox", resizeable:true},
 					  {key:"Date", formatter:"date", sortable:true, resizeable:true},
 					  {key:"Hours",formatter:"number",
 					   sortable:true, resizeable:true},
@@ -926,8 +933,6 @@ function init(verify, reportsto) {
 				      ], 
 				      dataSource, {paginator: 
 				       new yui2.widget.Paginator({rowsPerPage:8})});
-
-
                                   dataTable.subscribe("checkboxClickEvent", function(oArgs){
                                       var elCheckbox = oArgs.target;                                            
                                       var oRecord = this.getRecord(elCheckbox);                                 
