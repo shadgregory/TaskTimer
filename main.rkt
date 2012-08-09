@@ -17,7 +17,6 @@
          file/md5
          file/convertible
          srfi/13
-         plot
          "model.rkt"
          web-server/servlet-env)
 (require web-server/configuration/responders)
@@ -80,12 +79,14 @@
 
 (define confirm-reportsto
   (lambda (req)
+    (define bindings (request-bindings req))
+    (define username (extract-binding/single 'username bindings))
     (define user-match (mongo-dict-query
                         "user"
                         (make-hasheq
-                         (list (cons 'username (current-username req))))))
-    (define my-user (sequence-ref user-match 0))
-    (set-user-reportsto_verified! my-user #t)
+                         (list (cons 'username username)))))
+    (for/list ((u user-match))
+      (set-user-reportsto_verified! u #t))
     (response/xexpr
      '(msg "success"))))
 
@@ -244,16 +245,35 @@
      '(p ((style "text-align:center;"))
          (img ((src "graph-tasks")))))))
 
+(define get-username-from-cookie
+  (lambda (req)
+    (define cookies (request-cookies req))
+    (define id-cookie
+      (findf (lambda (c)
+               (string=? "id" (client-cookie-name c)))
+             cookies))
+    (define username (car (regexp-split #rx"-" (client-cookie-value id-cookie))))
+    (define cookieid (second (regexp-split #rx"-" (client-cookie-value id-cookie))))
+;    (define user-match
+;      (mongo-dict-query
+;       "user"
+;       (make-hasheq
+;        (list (cons 'username username)(cons 'cookieid cookieid)))))
+;	(if (= 0 (sequence-length user-match))
+;	  (redirect-to "/?msg=baduser")
+	  (form-urlencoded-decode username)))
+
 (define pro-page
   (lambda (req)
+	(log-warning "calling pro-page")
     (define user-match
       (mongo-dict-query
        "user"
        (make-hasheq
-        (list (cons 'reportsto (current-username req))))))
+        (list (cons 'reportsto (get-username-from-cookie req))))))
     (response/xexpr
      `(div
-       ,(if (pro? (current-username req))
+       ,(if (pro? (get-username-from-cookie req))
             `(div ((style "text-align:center;")(id "employees_group"))
                   (p "You can enter the usernames of your employees here.")
                   
@@ -342,6 +362,7 @@
               (script ((src "development-bundle/jquery-1.7.2.js")) " ")
               (script ((src "development-bundle/ui/jquery.ui.core.js")) " ")
               (script ((src "development-bundle/ui/jquery.ui.widget.js")) " ")
+              (script ((src "development-bundle/ui/jquery.ui.datepicker.js")) " ")
               (script ((src "development-bundle/ui/jquery.ui.tabs.js")) " ")
               (script ((src "development-bundle/ui/jquery.ui.mouse.js")) " ")
               (script ((src "development-bundle/ui/jquery.ui.button.js")) " ")
@@ -349,7 +370,7 @@
               (script ((src "development-bundle/ui/jquery.ui.position.js")) " ")
               (script ((src "development-bundle/ui/jquery.ui.dialog.js")) " ")
               (link ((type "text/css")(rel "stylesheet")(href "tasktimer.css")) " ")
-              (script ((type "text/javascript"))"$(function(){$('#tabs').tabs();});")
+              (script ((type "text/javascript"))"$(function(){$('#tabs').tabs();export_date_init();ga();});")
 	      )
              
              (body ((link "#000000")(alink "#000000")(vlink "#000000")
@@ -384,7 +405,8 @@
                                   (li (a ((href "#cal")) "Calendar"))
 ;                                  (li (a ((href "#datatable")) "Data"))
                                   (li (a ((href "chart.html")) "Charts"))
-                                  (li (a ((href "pro-page")) "Pro"))
+                                  (li (a ((href "pro-page" )) "Pro"))
+                                  (li (a ((href "export-page")) "Export"))
                                   )
                                  (div ((style "min-height:430px")(id "cal"))"")
 ;                                 (div ((style "min-height:430px;")(id "datatable"))
@@ -782,6 +804,7 @@
 (define oauth2callback
   (lambda (req)
     (define bindings (request-bindings req))
+    (define cookieid (number->string (random 4294967087)))
     (response/xexpr
      `(html
        (head 
@@ -812,7 +835,10 @@
               (set-user-cookieid! u cookieid))
              (else
               '())))
-         (redirect-to "timer" #:headers (list (cookie->header id-cookie)))))
+         (redirect-to
+	  "timer"
+	  see-other
+	  #:headers (list (cookie->header id-cookie)))))
       (else
        (redirect-to "/?msg=baduser")))))
 
@@ -831,7 +857,10 @@
                    #:pro #f
 		   #:max_users 0
                    #:cookieid cookieid)
-        (mongo-dict-set! (car user-match) 'cookieid cookieid))
+        ;(mongo-dict-set! (car user-match) 'cookieid cookieid)
+	(for/list ((u user-match))
+	  (set-user-cookieid! u cookieid)
+	))
     (response/xexpr
      `(cookies
        (cookie
@@ -848,7 +877,11 @@
          (cond
            ((insert-new-user (car data-list) (second data-list) cookieid)
             (define id-cookie (make-cookie "id" (string-append (car data-list) "-" cookieid) #:secure? #t))
-            (redirect-to "/timer" #:headers (list (cookie->header id-cookie))))
+            (redirect-to
+	     "/timer"
+	     see-other
+	     #:headers
+	     (list (cookie->header id-cookie))))
            (else
             (redirect-to "/?msg=notnew"))))
         (else
@@ -885,7 +918,9 @@
                    (script ((type "text/javascript")(src "jquery-1.7.1.min.js")) " ")
                    (link ((type "text/css")(rel "stylesheet")(href "tasktimer.css")) " ")
                    (link ((rel "stylesheet")(type "text/css")(href"css/zocial.css" ))" ")
-                   (script ((type "text/javascript")(src "tasktimer.js"))" "))
+                   (script ((type "text/javascript")(src "tasktimer.js"))" ")
+		   (script ((type "text/javascript"))"$(function(){ga();});")
+		   )
              (body ((link "#000000")(bgcolor "#228B22"))
                    (div ((id "center_content"))
                         ,(banner)
@@ -921,27 +956,103 @@
                                      (td
                                       (a ((href "https://accounts.google.com/o/oauth2/auth?scope=https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.email+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.profile&state=%2Fprofile&redirect_uri=https%3A%2F%2Ftommywindich.com/oauth2callback&response_type=token&client_id=21849082230.apps.googleusercontent.com")(class "zocial google")(style "font-size:13px;")) "Sign in with Google"))
                                      (td ((width "1")(bgcolor "787878"))(br))
-                                     (td
-                                      (g:plusone ((annotations "inline")))))))))))))))
+                                     (td 
+                                      (g:plusone ((annotations "inline"))))
+                                     (td ((width "1")(bgcolor "787878"))(br))
+				     (td
+				      (a ((href "https://twitter.com/share") (class "twitter-share-button") 
+					  (data-url "http://www.tommywindich.com") (data-text "Cool Time Tracking App"))"Tweet")
+				      (script "!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0];if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src='//platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document,'script','twitter-wjs');"))
+				      )))))))))))
 
-(define graph-tasks
-  (lambda (req)    
-    (response/full
-     200 
-     #"OK"
-     (current-seconds)
-     #"image/png"
-     (list (make-header #"Location"
-                        #"https://tommywindich.com/graph-tasks"))
-     (list
-      (convert
-       (plot
-        (list
-         (discrete-histogram
-          (hash-to-vectorlist (get-categories-vector (current-username req)))
-          #:label "Hours per category")
-         ))
-       'png-bytes)))))
+;define graph-tasks
+;  (lambda (req)    
+;    (response/full
+;     200 
+;     #"OK"
+;     (current-seconds)
+;     #"image/png"
+;     (list (make-header #"Location"
+;                        #"https://tommywindich.com/graph-tasks"))
+;     (list
+;      (convert
+;       (plot
+;        (list
+;         (discrete-histogram
+;          (hash-to-vectorlist (get-categories-vector (current-username req)))
+;          #:label "Hours per category")
+;         ))
+;       'png-bytes)))))
+
+(define export-csv
+  (lambda (req)
+    (define bindings (request-bindings req))
+    (let* ((username (extract-binding/single 'username bindings))
+	   (starttime (extract-binding/single 'starttime bindings))
+	   (endtime (extract-binding/single 'endtime bindings))
+	   (task-match (mongo-dict-query
+			"task"
+			(make-hasheq
+			 (list (cons 'username username)))))
+	   (cell-list (for/list ((t task-match) #:when (and
+							(string? (mongo-dict-ref t 'endtime))
+							(> (string->number endtime)(string->number (mongo-dict-ref t 'endtime)))
+							(< (string->number starttime)(string->number(mongo-dict-ref t 'endtime)))))
+			(list (string->bytes/utf-8
+			       (string-append "\""(mongo-dict-ref t 'username)
+					     "\",\""
+					     (mongo-dict-ref t 'category)
+					     "\",\""
+					     (mongo-dict-ref t 'comment)
+					     "\",\""
+					     (mongo-dict-ref t 'starttime)
+					     "\",\""
+					     (mongo-dict-ref t 'endtime)
+						 "\"\n"
+						 ))))))
+      (response/full
+       200
+       #"OK"
+       (current-seconds)
+       #"text/csv"
+       (list (make-header #"Content-Disposition" #"attachment; filename=tommywindich.csv"))
+       (flatten (cons #"\"User Name\",\"Category\",\"Comment,\"Start Time\",\"End Time\"\n" cell-list))))))
+
+(define export-page
+  (lambda (req)
+    (define user-match
+      (mongo-dict-query
+       "user"
+       (make-hasheq
+        (list (cons 'reportsto (get-username-from-cookie req))))))
+    (response/xexpr
+	  `(div
+	    (script "$(function() { export_date_init(); });")
+	    (div ((id "export_form"))
+		 (div ((style "color:red;") (id "msg_div")))
+		      (table
+		       (tr
+			(td ((colspan "2"))
+			    (b "Export your data to a CSV file.")))
+		       (tr
+			(td ((colspan "2"))
+			 ,(cond
+			   ((pro? (get-username-from-cookie req))
+			    `(select ((name "userSelectList")(id "export_username"))
+				     (option ((value ,(get-username-from-cookie req))),(get-username-from-cookie req))
+				     ,@(for/list ((u user-match))
+					 `(option ((value ,(mongo-dict-ref u 'username))),(mongo-dict-ref u 'username)))))
+			   (else
+			    `(input ((type "hidden")(id "export_username")(value ,(get-username-from-cookie req))))))))
+		       (tr
+			(td "Begin Date:") 
+			(td (input ((type "text") (id "export_begin_date")))))
+		       (tr
+			(td "End Date:")
+			(td (input ((type "text") (id "export_end_date")))))
+		       (tr
+			(td ((colspan "2"))
+			    (button ((onclick "export_csv();"))"Export")))))))))
 
 (define save-task
   (lambda (req)
@@ -1002,7 +1113,6 @@
    (("update-endtime") update-endtime)
    (("remove-doc") remove-doc)
    (("pause") pause)
-   (("graph-tasks") graph-tasks)
    (("graphs") graphs)
    (("unpause") unpause)
    (("oauth-user") oauth-user)
@@ -1013,6 +1123,8 @@
    (("noconfirm-reportsto") noconfirm-reportsto)
    (("get-all-users") get-all-users)
    (("add-reportsto") add-reportsto)
+   (("export-csv") export-csv)
+   (("export-page") export-page)
    (("timer") timer-page)))
 
 (define s1

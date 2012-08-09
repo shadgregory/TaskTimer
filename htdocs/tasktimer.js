@@ -113,16 +113,15 @@ function getUserInfo() {
 		    data:{username : user.email},
 		    success:function(xml){
 			$(xml).find("cookie").each(function(){
+			    var random_id = $(this).text();
 			    YUI().use('cookie', function (Y) {
 				Y.Cookie.set("id", 
-					     user.email + "-" + $(this).text(),
+					     user.email + "-" + random_id,
 					     {secure : true}
 					    );
-				document.cookie = "id="+user.email+"-"+$(this).text() + ";secure=true";
 				document.location = "/timer?username="+user.email;
 			    });
 			});
-
 		    }
 		});
 
@@ -548,6 +547,47 @@ function addNewRule(ruleSet, path, ruleName) {
     return ruleSet;
 }
 
+function ga() {
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-33694831-1']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+	var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+	ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+	var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+
+}
+
+function export_csv() {
+    var export_begin_date = new Date($("#export_begin_date").val());
+    var export_end_date = new Date($("#export_end_date").val() + " 23:59:59");
+    var username = $("#export_username").val();
+    window.open("export-csv?" +
+	"username=" + username +
+	    "&starttime=" + export_begin_date.getTime() +
+	    "&endtime=" + export_end_date.getTime());
+    /*		  
+    $.ajax({
+	url: "export-csv"
+	,context: document.body
+	,data: "username=" + username +
+	    "&starttime=" + export_begin_date.getTime() +
+	    "&endtime=" + export_end_date.getTime()
+	});
+	*/
+}
+
+function export_date_init() {
+    var d = new Date();
+    d.setMonth(d.getMonth()-1);
+    $("#export_begin_date" ).datepicker();
+    $("#export_end_date" ).datepicker();
+    $("#export_begin_date" ).datepicker('setDate', d);
+    $("#export_end_date").datepicker('setDate', new Date());
+}
+
 (function(){
     var po = document.createElement('script'); po.type = 'text/javascript'; po.async = true;
     po.src = 'https://apis.google.com/js/plusone.js';
@@ -586,10 +626,14 @@ function init(verify, reportsto) {
 	    modal: true,
 	    buttons: {
 		"Yes": function() {
-		    $.ajax({
-			url: "confirm-reportsto"
-			,context: document.body
-			,data : null
+		    YUI().use('cookie',function(Y){
+			var value = Y.Cookie.get("id");
+			var cookie_array = value.split("-");
+			$.ajax({
+			    url: "confirm-reportsto"
+			    ,context: document.body
+			    ,data : "username="+cookie_array[0]
+			});
 		    });
 		    $( this ).dialog( "close" );
 		},
@@ -827,7 +871,6 @@ function init(verify, reportsto) {
 					  var verified = false;
 					  if ($(this).find('verified').text() == 'T')
 					      verified = true;
-					  console.log("verified ", verified);
 					  var d = new Date(parseInt($(this).find('endtime').text()));
 					  var y = d.getFullYear();
 					  var m = d.getMonth();
