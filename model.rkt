@@ -21,6 +21,7 @@
 (define-mongo-struct
   user "user"
   ((username #:required)
+   (name)
    (cookieid)
    (reportsto)
    (reportsto_verified)

@@ -265,7 +265,6 @@
 
 (define pro-page
   (lambda (req)
-	(log-warning "calling pro-page")
     (define user-match
       (mongo-dict-query
        "user"
@@ -276,7 +275,6 @@
        ,(if (pro? (get-username-from-cookie req))
             `(div ((style "text-align:center;")(id "employees_group"))
                   (p "You can enter the usernames of your employees here.")
-                  
                   (div ((class "ui-widget")(style "display:none")(id "pro-msg"))
                        (div ((class "ui-state-error ui-corner-all")) 
                             (table
@@ -284,15 +282,17 @@
                               (td (span ((class "ui-icon ui-icon-alert"))))
                               (td (strong "Alert:"))
                               (td (div ((id "employees-msg-div"))"You should not see this."))))))
-                  
-                  (p (button ((type "button")(onclick ,(string-append "add_user(" (number->string (max_users (current-username req))) ");"))) "Add User"))
+		  (p (a ((href "https://www.paypal.com/cgi-bin/webscr?cmd=_subscr-find&alias=4GBCDQVXPPPR2"))
+		      (img ((src "https://www.paypalobjects.com/en_US/i/btn/btn_unsubscribe_LG.gif")(border "0")))))
+                  (p (button ((type "button")(onclick ,(string-append "add_user(" (number->string (max_users (get-username-from-cookie req))) ");"))) "Add User"))
                   (p
                    ,@(for/list ((u user-match))
                        `(p 
                          (input 
                           ((type "text")
                            (name "username")
-                           (value ,(mongo-dict-ref u 'username))))))))
+                           (value ,(mongo-dict-ref u 'username)))))))
+		  )
 	    `(div
 	      (p "If you are an employer, you may purchase employee accounts from PayPal.")
 	      (p 
@@ -305,8 +305,8 @@
 ;		     (input ((type "hidden")(name "hosted_button_id")(value "WT7HM97MRFEJL"))) ;sandbox
 		     (input ((type "hidden")(name "tw_username")(value ,(current-username req))))
 		     (input ((type "hidden")(name "notify_url")(value "https://tommywindich.com/process-payment")))
-		     (input ((type "hidden")(name "image_url")(value "https://tommywindich.com/tw_small.png")))
-		     (input ((type "image")(src "https://www.paypalobjects.com/en_US/i/btn/btn_buynowCC_LG.gif")(border "0")(name "submit")(alt "PayPal - The safer, easier way to pay online!")))
+		     (input ((type "hidden")(name "image_url")(value "https://tommywindich.com/tw_paypal.png")))
+		     (input ((type "image")(src "https://www.paypalobjects.com/en_US/i/btn/btn_buynowCC_SM.gif")(border "0")(name "submit")(alt "PayPal - The safer, easier way to pay online!")))
 		     (img ((alt "")(border "0")(src "https://www.paypalobjects.com/en_US/i/scr/pixel.gif")(width "1")(height "1"))))
 	       )
 ))))))
@@ -325,13 +325,27 @@
     (response/xexpr
      '(msg "notified"))))
 
+(define about-page
+  (lambda (req)
+    (response/xexpr
+     '(div ((style "width:600px;"))
+	   (p
+	    "Read about the real Tommy Windich "
+	    (a ((href "http://en.wikipedia.org/wiki/Tommy_Windich")) "here")
+	    ".")
+	   (p "Our goal at Tommy Windich is to provide hassle-free time tracking software. If you would like to contact us about the professional product, please do so at:")
+	   (p "sales@tommywindich.com")
+	   (p "All other inquiries should be directed to:")
+	   (p "support@tommywindich.com")))))
+
+
 (define timer-page
   (lambda (req)
     (define bindings (request-bindings req))
     (define task-match (mongo-dict-query
                         "task"
                         (make-hasheq
-                         (list (cons 'username (current-username req))
+                         (list (cons 'username (get-username-from-cookie req))
                                (cons 'in-progress #t)))))
     (define cookies (request-cookies req))
     (date-display-format 'iso-8601)
@@ -341,11 +355,11 @@
              cookies))
     (define verify-string
       (cond
-        ((reportsto-verified? (current-username req)) "verify = false;")
+        ((reportsto-verified? (get-username-from-cookie req)) "verify = false;")
         (else
          "verify = true;")))
     (if id-cookie
-        (let ((username (current-username req)))
+        (let ((username (get-username-from-cookie req)))
           (if (string=? username "baduser")
               (redirect-to "/?msg=baduser")
               '())
@@ -370,8 +384,7 @@
               (script ((src "development-bundle/ui/jquery.ui.position.js")) " ")
               (script ((src "development-bundle/ui/jquery.ui.dialog.js")) " ")
               (link ((type "text/css")(rel "stylesheet")(href "tasktimer.css")) " ")
-              (script ((type "text/javascript"))"$(function(){$('#tabs').tabs();export_date_init();ga();});")
-	      )
+              (script ((type "text/javascript"))"$(function(){$('#tabs').tabs();export_date_init();ga();});"))
              
              (body ((link "#000000")(alink "#000000")(vlink "#000000")
                                     (class "yui3-skin-sam yui-skin-sam")
@@ -407,6 +420,7 @@
                                   (li (a ((href "chart.html")) "Charts"))
                                   (li (a ((href "pro-page" )) "Pro"))
                                   (li (a ((href "export-page")) "Export"))
+				  (li (a ((href "about-page")) "About"))
                                   )
                                  (div ((style "min-height:430px")(id "cal"))"")
 ;                                 (div ((style "min-height:430px;")(id "datatable"))
@@ -418,7 +432,7 @@
 			  )
                    (script ((type "text/javascript")) ,(string-append "var verify = false;"
                                                                       "var reportsto = \""
-                                                                      (reportsto (current-username req))
+                                                                      (reportsto (get-username-from-cookie req))
                                                                       "\";"
                                                                       verify-string
                                                                       "init(verify, reportsto);"))
@@ -828,7 +842,7 @@
                        (formlet-process user-formlet req)))
        (let* ((username (car (formlet-process user-formlet req)))
               (cookieid (number->string (random 4294967087)))
-              (id-cookie (make-cookie "id" (string-append  username "-" cookieid) #:secure? #t)))
+              (id-cookie (make-cookie "id" (string-append  (form-urlencoded-decode username) "-" cookieid) #:secure? #t)))
          (for/list ((u (mongo-dict-query "user" (hasheq))))
            (cond
              ((string=? username (user-username u))
@@ -866,6 +880,32 @@
        (cookie
         ,cookieid)))))
 
+(define facebook-connected
+  (lambda (req)
+    (define bindings (request-bindings req))
+    (let* ((name (extract-binding/single 'name bindings))
+           (email (form-urlencoded-decode (extract-binding/single 'email bindings)))
+           (cookieid (number->string (random 4294967087)))
+           (id-cookie (make-cookie "id" (string-append (form-urlencoded-decode email) "-" cookieid) #:secure? #t))
+           (user-list 
+            (for/list ((u (mongo-dict-query "user" empty)) #:when (string=? email (mongo-dict-ref u 'username)))(list u))))
+      (if (empty? user-list)
+            (make-user #:username email
+                       #:cookieid cookieid
+                       #:name name
+                       #:reportsto_verified #f
+                       #:pro #f
+                       #:max_users 0)
+	    (set-user-cookieid! (car (car user-list)) cookieid))
+      (response
+       301 #"Moved Permanently"
+       (current-seconds) TEXT/HTML-MIME-TYPE
+       (list 
+	(cookie->header id-cookie)
+	(make-header #"Location"
+		     #"https://tommywindich.com/timer"))
+       (λ (op) (write-bytes #"Moved" op))))))
+
 (define validate-new-user
   (lambda (req)
     (let ((data-list (formlet-process new-user-formlet req))
@@ -876,7 +916,7 @@
         ((string=? (second data-list)(third data-list))
          (cond
            ((insert-new-user (car data-list) (second data-list) cookieid)
-            (define id-cookie (make-cookie "id" (string-append (car data-list) "-" cookieid) #:secure? #t))
+            (define id-cookie (make-cookie "id" (string-append (form-urlencoded-decode (car data-list)) "-" cookieid) #:secure? #t))
             (redirect-to
 	     "/timer"
 	     see-other
@@ -900,6 +940,18 @@
             (td ((style "text-align:right;vertical-align:bottom;"))
                 (h3 ((style "font-family:dynalight;"))"Time tracking made easy...")))))))
 
+(define facebook-channel
+  (lambda (req)
+    (response/full
+     200 
+     #"OK"
+     (current-seconds)
+     TEXT/HTML-MIME-TYPE
+     (list 
+      (make-header #"Pragma" #"public")
+      (make-header #"Cache-Control" #"max-age=604800"))
+     (list #"<script src='//connect.facebook.net/en_US/all.js'></script>"))))
+
 (define logon-page
   (lambda (req)
     (define msg (get-msg req))
@@ -919,53 +971,41 @@
                    (link ((type "text/css")(rel "stylesheet")(href "tasktimer.css")) " ")
                    (link ((rel "stylesheet")(type "text/css")(href"css/zocial.css" ))" ")
                    (script ((type "text/javascript")(src "tasktimer.js"))" ")
-		   (script ((type "text/javascript"))"$(function(){ga();});")
+		   (script ((charset "utf-8")(src "widget.js"))" ")
+		   (script ((type "text/javascript"))"$(function(){ga();facebook_init();});")
 		   )
              (body ((link "#000000")(bgcolor "#228B22"))
+		   (div ((id "fb-root"))" ")
                    (div ((id "center_content"))
                         ,(banner)
-                        (div ((style "border:1px solid black;background:#99CCFF;padding-top:5px;padding-left:5px;"))
+			(div ((style "border:1px solid black;background:#000000;padding-top:5px;padding-left:5px;"))
                              (div ((id "message_div") (style "color:red;")) 
                                   ,(cond
-                                     ((string=? msg "notnew")
-                                      "Please choose another user name.")
-                                     ((string=? msg "nomatch")
-                                      "Your passwords did not match.")
-                                     ((string=? msg "tooshort")
-                                      "Passwords must be at least 8 characters.")
-                                     ((string=? msg "baduser")
-                                      "Login failed.")
-                                     (else
-                                      " ")))
-                             (form ((id "logon_form")
-                                    (action "validate-user")
-                                    (onsubmit "return check_login();"))
-                                   ,@(formlet-display user-formlet)
-                                   (br)
-                                   (input ((type "submit")(name "login")(value "Login")))))
-                        (div ((style "border:1px solid black;background:#99CCFF;padding-top:5px;padding-left:5px;"))
-                             (form ((id "create_logon_form")
-                                    (action "validate-new-user")
-                                    (onsubmit "return cmp_passwords();"))
-                                   ,@(formlet-display new-user-formlet)
-                                   (br)
-                                   (input ((type "submit")(name "login")(value "Create Account")))))
+				    ((string=? msg "notnew")
+				     "Please choose another user name.")
+				    ((string=? msg "nomatch")
+				     "Your passwords did not match.")
+				    ((string=? msg "tooshort")
+				     "Passwords must be at least 8 characters.")
+				    ((string=? msg "baduser")
+				     "Login failed.")
+				    (else
+				     " ")))
+			     (div
+			      (script "new TWTR.Widget({version:2,type:'profile',rpp: 4,interval:30000,width:680,height: 300,theme: {shell:{background: '#9c947c',color: '#ffffff'},tweets: {background: '#201913',color: '#ffffff',links: '#4aed05'}},features:{scrollbar:false,loop:false,live: false,behavior:'all'}}).render().setUser('tommywindichcom').start();")))
                         (div ((style "border:1px solid black;background:#99CCFF;padding:5px;"))
                              (table ((cellpadding "0"))
                                     (tr
                                      (td
-                                      (a ((href "https://accounts.google.com/o/oauth2/auth?scope=https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.email+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.profile&state=%2Fprofile&redirect_uri=https%3A%2F%2Ftommywindich.com/oauth2callback&response_type=token&client_id=21849082230.apps.googleusercontent.com")(class "zocial google")(style "font-size:13px;")) "Sign in with Google"))
-                                     (td ((width "1")(bgcolor "787878"))(br))
-                                     (td 
-                                      (g:plusone ((annotations "inline"))))
-                                     (td ((width "1")(bgcolor "787878"))(br))
+                                      (a ((href "https://accounts.google.com/o/oauth2/auth?scope=https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.email+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.profile&state=%2Fprofile&redirect_uri=https%3A%2F%2Ftommywindich.com/oauth2callback&response_type=token&client_id=21849082230.apps.googleusercontent.com")(class "zocial google")(style "font-size:11px;")) "Login with Google"))
 				     (td
-				      (a ((href "https://twitter.com/share") (class "twitter-share-button") 
-					  (data-url "http://www.tommywindich.com") (data-text "Cool Time Tracking App"))"Tweet")
-				      (script "!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0];if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src='//platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document,'script','twitter-wjs');"))
-				      )))))))))))
+				      (a ((href "#")(id "facebook_login")(class "zocial facebook")(style "font-size:11px"))"Login with Facebook"))
+				     (tr 
+				      (td ((colspan "2"))
+					  (g:plusone ((annotations "inline")))))
+				     )))))))))))
 
-;define graph-tasks
+;(define graph-tasks
 ;  (lambda (req)    
 ;    (response/full
 ;     200 
@@ -1005,18 +1045,16 @@
 					     "\",\""
 					     (mongo-dict-ref t 'comment)
 					     "\",\""
-					     (mongo-dict-ref t 'starttime)
-					     "\",\""
-					     (mongo-dict-ref t 'endtime)
-						 "\"\n"
-						 ))))))
+					     (date->string (seconds->date  
+							    (/ (string->number (mongo-dict-ref t 'endtime)) 1000)))
+						 "\"\n"))))))
       (response/full
        200
        #"OK"
        (current-seconds)
        #"text/csv"
        (list (make-header #"Content-Disposition" #"attachment; filename=tommywindich.csv"))
-       (flatten (cons #"\"User Name\",\"Category\",\"Comment,\"Start Time\",\"End Time\"\n" cell-list))))))
+       (flatten (cons #"\"User Name\",\"Category\",\"Comment,\"End Date\"\n" cell-list))))))
 
 (define export-page
   (lambda (req)
@@ -1099,6 +1137,7 @@
   (dispatch-rules
    (("") logon-page)
    (("save-task") save-task)
+   (("facebook-connected") facebook-connected)
    (("create-task") create-task)
    (("get-tasks") get-tasks)
    (("get-tasks-with-date") get-tasks-with-date)
@@ -1119,11 +1158,13 @@
    (("tasks-page") tasks-page)
    (("process-payment") process-payment)
    (("pro-page") pro-page)
+   (("about-page") about-page)
    (("confirm-reportsto") confirm-reportsto)
    (("noconfirm-reportsto") noconfirm-reportsto)
    (("get-all-users") get-all-users)
    (("add-reportsto") add-reportsto)
    (("export-csv") export-csv)
+   (("facebook-channel") facebook-channel)
    (("export-page") export-page)
    (("timer") timer-page)))
 

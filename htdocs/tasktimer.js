@@ -43,6 +43,64 @@ if (!Array.prototype.filter) {
     };
 }
 
+var makeTwitterWidget = function () {
+    new TWTR.Widget({version:2
+		     ,type:'profile'
+		     ,rpp: 4
+		     ,interval:30000
+		     ,width:680
+		     ,height: 300
+		     ,theme: {
+			 shell: {background: '#9c947c',  color: '#ffffff'    }
+			 ,tweets: {
+			     background: '#201913'
+			     ,color: '#ffffff'
+			     ,links: '#4aed05'
+				  }
+		     }
+		     ,features: {
+			 scrollbar: false
+			 ,loop: false
+			 ,live: false
+			 ,behavior: 'all'
+		     }}).render().setUser('tommywindichcom').start();
+};
+
+function facebook_init() {
+    window.fbAsyncInit = function() {
+        FB.init({
+            appId      : '438202466222988', // App ID
+            channelUrl : 'http://tommywindich.com/facebook-channel', // Channel File
+            status     : true, // check login status
+            cookie     : true, // enable cookies to allow the server to access the session
+            xfbml      : true  // parse XFBML
+        });
+	document.getElementById('facebook_login').addEventListener('click',function(){
+	    FB.login(function(response) {
+		if (response.authResponse) {
+		    console.log('Welcome!  Fetching your information.... ');
+		    FB.api('/me', function(response) {
+				console.log('Good to see you, ' + response.name + '.');
+				console.log('Good to see you, ' + response.email + '.');
+				window.location.replace("http://tommywindich.com/facebook-connected?email=" + response.email + "&name=" + response.name);
+		    });
+		} else {
+		    console.log('User cancelled login or did not fully authorize.');
+		}
+	    },{scope : 'email'});
+	});
+        // Additional initialization code here
+    };
+    // Load the SDK Asynchronously
+    (function(d){
+        var js, id = 'facebook-jssdk', ref = d.getElementsByTagName('script')[0];
+        if (d.getElementById(id)) {return;}
+        js = d.createElement('script'); js.id = id; js.async = true;
+        js.src = "//connect.facebook.net/en_US/all.js";
+        ref.parentNode.insertBefore(js, ref);
+    }(document));
+}
+
 function validateToken(token) {
     var VALIDURL    =   'https://www.googleapis.com/oauth2/v1/tokeninfo?access_token=';
     $.ajax({
@@ -116,7 +174,7 @@ function getUserInfo() {
 			    var random_id = $(this).text();
 			    YUI().use('cookie', function (Y) {
 				Y.Cookie.set("id", 
-					     user.email + "-" + random_id,
+					     decodeURIComponent(user.email) + "-" + random_id,
 					     {secure : true}
 					    );
 				document.location = "/timer?username="+user.email;
@@ -568,15 +626,6 @@ function export_csv() {
 	"username=" + username +
 	    "&starttime=" + export_begin_date.getTime() +
 	    "&endtime=" + export_end_date.getTime());
-    /*		  
-    $.ajax({
-	url: "export-csv"
-	,context: document.body
-	,data: "username=" + username +
-	    "&starttime=" + export_begin_date.getTime() +
-	    "&endtime=" + export_end_date.getTime()
-	});
-	*/
 }
 
 function export_date_init() {
