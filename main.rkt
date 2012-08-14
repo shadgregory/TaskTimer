@@ -184,7 +184,7 @@
                                (cons 'in-progress #t)))))
     (response/xexpr
      `(div ((id "tasks-list")(class "tasks-list")(style "min-height:430px;padding: 5px"))
-           (a ((href "#")(onclick "add_task()")) "Add Task")
+           (a ((href "#")(onclick "add_task()")(id "add_task")) "Add Task")
            (table ((id "tasks-table"))
                   (tr
                    (th)
@@ -244,6 +244,12 @@
     (response/xexpr
      '(p ((style "text-align:center;"))
          (img ((src "graph-tasks")))))))
+
+(define fire-audit-event
+  (lambda (username msg)
+       (make-event #:username username
+		   #:message msg
+		   #:timestamp (current-seconds))))
 
 (define get-username-from-cookie
   (lambda (req)
@@ -338,7 +344,6 @@
 	   (p "All other inquiries should be directed to:")
 	   (p "support@tommywindich.com")))))
 
-
 (define timer-page
   (lambda (req)
     (define bindings (request-bindings req))
@@ -363,6 +368,7 @@
           (if (string=? username "baduser")
               (redirect-to "/?msg=baduser")
               '())
+	  (fire-audit-event username "User logged on.")
           (response/xexpr
            #:preamble #"<!DOCTYPE html>"
            `(html
@@ -376,6 +382,7 @@
               (script ((src "development-bundle/jquery-1.7.2.js")) " ")
               (script ((src "development-bundle/ui/jquery.ui.core.js")) " ")
               (script ((src "development-bundle/ui/jquery.ui.widget.js")) " ")
+              (script ((src "development-bundle/ui/jquery.ui.button.js")) " ")
               (script ((src "development-bundle/ui/jquery.ui.datepicker.js")) " ")
               (script ((src "development-bundle/ui/jquery.ui.tabs.js")) " ")
               (script ((src "development-bundle/ui/jquery.ui.mouse.js")) " ")
@@ -384,7 +391,7 @@
               (script ((src "development-bundle/ui/jquery.ui.position.js")) " ")
               (script ((src "development-bundle/ui/jquery.ui.dialog.js")) " ")
               (link ((type "text/css")(rel "stylesheet")(href "tasktimer.css")) " ")
-              (script ((type "text/javascript"))"$(function(){$('#tabs').tabs();export_date_init();ga();});"))
+              (script ((type "text/javascript"))"$(function(){$('#add_task').button();$('#tabs').tabs();export_date_init();});"))
              
              (body ((link "#000000")(alink "#000000")(vlink "#000000")
                                     (class "yui3-skin-sam yui-skin-sam")
@@ -416,27 +423,18 @@
                                  (ul
                                   (li (a ((href "tasks-page")) "Create Tasks"))
                                   (li (a ((href "#cal")) "Calendar"))
-;                                  (li (a ((href "#datatable")) "Data"))
                                   (li (a ((href "chart.html")) "Charts"))
                                   (li (a ((href "pro-page" )) "Pro"))
                                   (li (a ((href "export-page")) "Export"))
-				  (li (a ((href "about-page")) "About"))
-                                  )
-                                 (div ((style "min-height:430px")(id "cal"))"")
-;                                 (div ((style "min-height:430px;")(id "datatable"))
-;                                      (div ((id "pg")) " ")
-;                                      (div ((id "all-tasks"))))
-				 )
-			    )
-			   )
-			  )
+				  (li (a ((href "about-page")) "About")))
+                                 (div ((style "min-height:430px")(id "cal"))"")))))
                    (script ((type "text/javascript")) ,(string-append "var verify = false;"
                                                                       "var reportsto = \""
                                                                       (reportsto (get-username-from-cookie req))
                                                                       "\";"
                                                                       verify-string
                                                                       "init(verify, reportsto);"))
-                   ))))
+	))))
         (redirect-to "/?msg=baduser"))))
 
 (define get-msg
@@ -970,14 +968,23 @@
                    (script ((type "text/javascript")(src "jquery-1.7.1.min.js")) " ")
                    (link ((type "text/css")(rel "stylesheet")(href "tasktimer.css")) " ")
                    (link ((rel "stylesheet")(type "text/css")(href"css/zocial.css" ))" ")
+		   (link ((rel "stylesheet") (href "development-bundle/themes/mint-choc/jquery.ui.all.css")) " ")
+		   (script ((src "development-bundle/ui/jquery.ui.core.js")) " ")
+		   (script ((src "development-bundle/ui/jquery.ui.widget.js")) " ")
+     	   (script ((src "development-bundle/ui/jquery.ui.button.js")) " ")
+		   (script ((src "development-bundle/ui/jquery.ui.tabs.js")) " ")
                    (script ((type "text/javascript")(src "tasktimer.js"))" ")
 		   (script ((charset "utf-8")(src "widget.js"))" ")
-		   (script ((type "text/javascript"))"$(function(){ga();facebook_init();});")
+		   (script ((type "text/javascript"))"$(function(){$('#logon_tabs').tabs();facebook_init();});")
 		   )
              (body ((link "#000000")(bgcolor "#228B22"))
 		   (div ((id "fb-root"))" ")
                    (div ((id "center_content"))
                         ,(banner)
+			(div ((id "logon_tabs"))
+			     (ul
+			      (li (a ((href "#twitter_tab")) "Twitter"))
+			      (li (a ((href "about-page")) "About")))
 			(div ((style "border:1px solid black;background:#000000;padding-top:5px;padding-left:5px;"))
                              (div ((id "message_div") (style "color:red;")) 
                                   ,(cond
@@ -991,8 +998,8 @@
 				     "Login failed.")
 				    (else
 				     " ")))
-			     (div
-			      (script "new TWTR.Widget({version:2,type:'profile',rpp: 4,interval:30000,width:680,height: 300,theme: {shell:{background: '#9c947c',color: '#ffffff'},tweets: {background: '#201913',color: '#ffffff',links: '#4aed05'}},features:{scrollbar:false,loop:false,live: false,behavior:'all'}}).render().setUser('tommywindichcom').start();")))
+			     (div ((id "twitter_tab"))
+			      (script "new TWTR.Widget({version:2,type:'profile',rpp: 4,interval:30000,width:640,height: 300,theme: {shell:{background: '#9c947c',color: '#ffffff'},tweets: {background: '#201913',color: '#ffffff',links: '#4aed05'}},features:{scrollbar:false,loop:false,live: false,behavior:'all'}}).render().setUser('tommywindichcom').start();"))))
                         (div ((style "border:1px solid black;background:#99CCFF;padding:5px;"))
                              (table ((cellpadding "0"))
                                     (tr
@@ -1002,8 +1009,7 @@
 				      (a ((href "#")(id "facebook_login")(class "zocial facebook")(style "font-size:11px"))"Login with Facebook"))
 				     (tr 
 				      (td ((colspan "2"))
-					  (g:plusone ((annotations "inline")))))
-				     )))))))))))
+					  (g:plusone ((annotations "inline"))))))))))))))))
 
 ;(define graph-tasks
 ;  (lambda (req)    
@@ -1064,33 +1070,33 @@
        (make-hasheq
         (list (cons 'reportsto (get-username-from-cookie req))))))
     (response/xexpr
-	  `(div
-	    (script "$(function() { export_date_init(); });")
-	    (div ((id "export_form"))
-		 (div ((style "color:red;") (id "msg_div")))
-		      (table
-		       (tr
-			(td ((colspan "2"))
-			    (b "Export your data to a CSV file.")))
-		       (tr
-			(td ((colspan "2"))
-			 ,(cond
-			   ((pro? (get-username-from-cookie req))
-			    `(select ((name "userSelectList")(id "export_username"))
-				     (option ((value ,(get-username-from-cookie req))),(get-username-from-cookie req))
-				     ,@(for/list ((u user-match))
-					 `(option ((value ,(mongo-dict-ref u 'username))),(mongo-dict-ref u 'username)))))
-			   (else
-			    `(input ((type "hidden")(id "export_username")(value ,(get-username-from-cookie req))))))))
-		       (tr
-			(td "Begin Date:") 
-			(td (input ((type "text") (id "export_begin_date")))))
-		       (tr
-			(td "End Date:")
-			(td (input ((type "text") (id "export_end_date")))))
-		       (tr
-			(td ((colspan "2"))
-			    (button ((onclick "export_csv();"))"Export")))))))))
+     `(div
+       (script "$(function() { export_date_init(); });")
+       (div ((id "export_form"))
+	    (div ((style "color:red;") (id "msg_div")))
+	    (table
+	     (tr
+	      (td ((colspan "2"))
+		  (b "Export your data to a CSV file.")))
+	     (tr
+	      (td ((colspan "2"))
+		  ,(cond
+		    ((pro? (get-username-from-cookie req))
+		     `(select ((name "userSelectList")(id "export_username"))
+			      (option ((value ,(get-username-from-cookie req))),(get-username-from-cookie req))
+			      ,@(for/list ((u user-match))
+					  `(option ((value ,(mongo-dict-ref u 'username))),(mongo-dict-ref u 'username)))))
+		    (else
+		     `(input ((type "hidden")(id "export_username")(value ,(get-username-from-cookie req))))))))
+	     (tr
+	      (td "Begin Date:") 
+	      (td (input ((type "text") (id "export_begin_date")))))
+	     (tr
+	      (td "End Date:")
+	      (td (input ((type "text") (id "export_end_date")))))
+	     (tr
+	      (td ((colspan "2"))
+		  (button ((onclick "export_csv();"))"Export")))))))))
 
 (define save-task
   (lambda (req)
@@ -1120,7 +1126,7 @@
                   (set-task-username! t (current-username req)))
                 '())
             )
-          (make-task #:username (current-username req)
+          (make-task #:username (get-username-from-cookie req)
                      #:in-progress #t
                      #:verified 0
                      #:comment comment
