@@ -1,6 +1,11 @@
 #lang racket
 (require (planet jaymccarthy/mongodb))
 
+(define-mongo-struct event "event"
+  ((username)
+   (message)
+   (timestamp)))
+
 (define-mongo-struct task "task"
   ((username #:required)
    (bugnumber)
