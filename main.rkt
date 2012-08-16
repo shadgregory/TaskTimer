@@ -180,11 +180,11 @@
     (define task-match (mongo-dict-query
                         "task"
                         (make-hasheq
-                         (list (cons 'username (current-username req))
+                         (list (cons 'username (get-username-from-cookie req))
                                (cons 'in-progress #t)))))
     (response/xexpr
      `(div ((id "tasks-list")(class "tasks-list")(style "min-height:430px;padding: 5px"))
-           (a ((href "#")(onclick "add_task()")(id "add_task")) "Add Task")
+	   (button ((id "add_task_button")(onclick "add_task();"))"Add Task")
            (table ((id "tasks-table"))
                   (tr
                    (th)
@@ -237,7 +237,9 @@
                                
                                (td (div ((style "font-weight:bold")(id ,(string-append "timer_" (mongo-dict-ref t 'starttime)))) " ")))
                            (script ((type "text/javascript"))
-                                   ,(string-append "start_timer(" (mongo-dict-ref t 'starttime) ");")))))))))
+                                   ,(string-append "start_timer(" (mongo-dict-ref t 'starttime) ");")))))
+	   (script "$('#add_task_button').button();")
+	   ))))
 
 (define graphs
   (lambda (req)
@@ -276,10 +278,12 @@
        "user"
        (make-hasheq
         (list (cons 'reportsto (get-username-from-cookie req))))))
+    (fire-audit-event (get-username-from-cookie req) "User visited pro page.")
     (response/xexpr
      `(div
        ,(if (pro? (get-username-from-cookie req))
-            `(div ((style "text-align:center;")(id "employees_group"))
+	    `(div
+	      (div ((style "text-align:center;")(id "employees_group"))
                   (p "You can enter the usernames of your employees here.")
                   (div ((class "ui-widget")(style "display:none")(id "pro-msg"))
                        (div ((class "ui-state-error ui-corner-all")) 
@@ -288,8 +292,6 @@
                               (td (span ((class "ui-icon ui-icon-alert"))))
                               (td (strong "Alert:"))
                               (td (div ((id "employees-msg-div"))"You should not see this."))))))
-		  (p (a ((href "https://www.paypal.com/cgi-bin/webscr?cmd=_subscr-find&alias=4GBCDQVXPPPR2"))
-		      (img ((src "https://www.paypalobjects.com/en_US/i/btn/btn_unsubscribe_LG.gif")(border "0")))))
                   (p (button ((type "button")(onclick ,(string-append "add_user(" (number->string (max_users (get-username-from-cookie req))) ");"))) "Add User"))
                   (p
                    ,@(for/list ((u user-match))
@@ -297,8 +299,9 @@
                          (input 
                           ((type "text")
                            (name "username")
-                           (value ,(mongo-dict-ref u 'username)))))))
-		  )
+                           (value ,(mongo-dict-ref u 'username))))))))
+		  (p ((style "text-align:right"))(a ((href "https://www.paypal.com/cgi-bin/webscr?cmd=_subscr-find&alias=4GBCDQVXPPPR2"))
+		      (img ((src "https://www.paypalobjects.com/en_US/i/btn/btn_unsubscribe_LG.gif")(border "0"))))))
 	    `(div
 	      (p "If you are an employer, you may purchase employee accounts from PayPal.")
 	      (p 
@@ -382,7 +385,8 @@
               (script ((src "development-bundle/jquery-1.7.2.js")) " ")
               (script ((src "development-bundle/ui/jquery.ui.core.js")) " ")
               (script ((src "development-bundle/ui/jquery.ui.widget.js")) " ")
-              (script ((src "development-bundle/ui/jquery.ui.button.js")) " ")
+              (script ((src "development-bundle/ui/jquery.ui.position.js")) " ")
+              (script ((src "development-bundle/ui/jquery.ui.autocomplete.js")) " ")
               (script ((src "development-bundle/ui/jquery.ui.datepicker.js")) " ")
               (script ((src "development-bundle/ui/jquery.ui.tabs.js")) " ")
               (script ((src "development-bundle/ui/jquery.ui.mouse.js")) " ")
@@ -391,8 +395,7 @@
               (script ((src "development-bundle/ui/jquery.ui.position.js")) " ")
               (script ((src "development-bundle/ui/jquery.ui.dialog.js")) " ")
               (link ((type "text/css")(rel "stylesheet")(href "tasktimer.css")) " ")
-              (script ((type "text/javascript"))"$(function(){$('#add_task').button();$('#tabs').tabs();export_date_init();});"))
-             
+              (script ((type "text/javascript")) "$(function(){$('#tabs').tabs();export_date_init();});"))
              (body ((link "#000000")(alink "#000000")(vlink "#000000")
                                     (class "yui3-skin-sam yui-skin-sam")
                                     (bgcolor "#228B22"))
@@ -801,6 +804,7 @@
 (define create-task
   (lambda (req)
     (define bindings (request-bindings req))
+    (fire-audit-event (get-username-from-cookie req) "User created a task.")
     (let*
         ((starttime (extract-binding/single 'starttime bindings))
          (username (current-username req))
@@ -1069,6 +1073,7 @@
        "user"
        (make-hasheq
         (list (cons 'reportsto (get-username-from-cookie req))))))
+    (fire-audit-event (get-username-from-cookie req) "User visited export page.")
     (response/xexpr
      `(div
        (script "$(function() { export_date_init(); });")

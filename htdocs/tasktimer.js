@@ -321,6 +321,7 @@ function add_row(table_id, cat_value, hours_value, note_value, verified, yui2, b
     noteDiv.appendChild(notescontr);
     hourscell.appendChild(hcDiv);
     notescell.appendChild(noteDiv);
+    /*
     YUI().use('event', 'autocomplete', 'autocomplete-highlighters', function(Y) {
 	Y.Event.onAvailable('#category' + lastRow, function(e) {
 	    Y.one('#category' + lastRow).plug(Y.Plugin.AutoComplete, {
@@ -332,6 +333,10 @@ function add_row(table_id, cat_value, hours_value, note_value, verified, yui2, b
 		}
 	    });
 	});
+    });
+    */
+    $("#category" + lastRow).autocomplete({
+	source: categoryArray
     });
     if (verified) {
 	notesinput.disabled = true;
@@ -515,13 +520,8 @@ function add_task() {
 
     YUI().use('event', 'autocomplete', 'autocomplete-highlighters', function(Y) {
 	Y.Event.onAvailable('#auto_cat' + d.getTime(), function(e) {
-	    Y.one('#auto_cat'+d.getTime()).plug(Y.Plugin.AutoComplete, {
-		resultHighlighter: 'phraseMatch',
-		source: categoryArray,
-		on : {
-		    select : function(e) {
-		    }
-		}
+	    $("#auto_cat" + d.getTime()).autocomplete({
+		source: categoryArray
 	    });
 	});
     });
@@ -605,19 +605,6 @@ function addNewRule(ruleSet, path, ruleName) {
     return ruleSet;
 }
 
-function ga() {
-    var _gaq = _gaq || [];
-    _gaq.push(['_setAccount', 'UA-33694831-1']);
-    _gaq.push(['_trackPageview']);
-
-    (function() {
-	var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
-	ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
-	var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
-    })();
-
-}
-
 function export_csv() {
     var export_begin_date = new Date($("#export_begin_date").val());
     var export_end_date = new Date($("#export_end_date").val() + " 23:59:59");
@@ -667,6 +654,7 @@ function init(verify, reportsto) {
 	    }
 	}
     };
+
     if (verify) {
 	$("#message-p").text("Do you report to " + reportsto + "?");
 	$( "#dialog-confirm" ).dialog({
@@ -716,8 +704,13 @@ function init(verify, reportsto) {
 		  for (var i=0;i<cat_array.length;i++) {
 		      var id_string = cat_array[i].id;
 		      Y.Event.onAvailable('#' + id_string, function(e) {
+			  /*
 			  Y.one('#' + id_string).plug(Y.Plugin.AutoComplete, {
 			      resultHighlighter: 'phraseMatch',
+			      source: categoryArray
+			  });
+			  */
+			  $("#" + id_string).autocomplete({
 			      source: categoryArray
 			  });
 		      });
