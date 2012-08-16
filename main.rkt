@@ -1049,22 +1049,22 @@
 							(> (string->number endtime)(string->number (mongo-dict-ref t 'endtime)))
 							(< (string->number starttime)(string->number(mongo-dict-ref t 'endtime)))))
 			(list (string->bytes/utf-8
-			       (string-append "\""(mongo-dict-ref t 'username)
-					     "\",\""
+			       (string-append "\t\""(mongo-dict-ref t 'username)
+					     "\"\t\""
 					     (mongo-dict-ref t 'category)
-					     "\",\""
+					     "\"\t\""
 					     (mongo-dict-ref t 'comment)
-					     "\",\""
+					     "\"\t\""
 					     (date->string (seconds->date  
 							    (/ (string->number (mongo-dict-ref t 'endtime)) 1000)))
-						 "\"\n"))))))
+						 "\"\t\n"))))))
       (response/full
        200
        #"OK"
        (current-seconds)
        #"text/csv"
        (list (make-header #"Content-Disposition" #"attachment; filename=tommywindich.csv"))
-       (flatten (cons #"\"User Name\",\"Category\",\"Comment,\"End Date\"\n" cell-list))))))
+       (flatten (cons #"\t\"User Name\"\t\"Category\"\t\"Comment\"\t\"End Date\"\t\n" cell-list))))))
 
 (define export-page
   (lambda (req)
