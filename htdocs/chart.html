@@ -1,19 +1,44 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN">
 <html>
-  <head>
-    <script src="yui/build/yui/yui.js" charset="utf-8"></script>
-    <script src="yui/build/loader/loader.js" charset="utf-8"></script>
-    <script type="text/javascript" src="jquery-1.7.1.min.js"></script>
-    <style scoped>
-      #mychart {
-      margin:10px 10px 10px 10px;
-      width: 400px;
-      height:400px;
-      }
-    </style>
-  </head>
-  <body class="yui3-skin-sam">
-    <div id="mychart"></div>
-    <script type="text/javascript">
+   <head>
+      <script src="yui/build/yui/yui.js" charset="utf-8" type=
+      "text/javascript">
+      </script>
+      <script src="yui/build/loader/loader.js" charset="utf-8" type=
+      "text/javascript">
+      </script>
+      <script type="text/javascript" src=
+      "development-bundle/jquery-1.7.2.js">
+      </script>
+      <script src="development-bundle/ui/jquery.ui.core.js" type=
+      "text/javascript">
+      </script>
+      <script src="development-bundle/ui/jquery.ui.widget.js" type=
+      "text/javascript">
+      </script>
+      <script src="development-bundle/ui/jquery.ui.button.js" type=
+      "text/javascript">
+      </script>
+      <style scoped="" type="text/css">
+          #mychart {
+              margin:10px 10px 10px 10px;
+              width: 400px;
+              height:400px;
+          }
+      </style>
+      <title>TranquilTrak Charts</title>
+    </head>
+<body class="yui3-skin-sam">
+<div id="chart_buttons"><button id='switch_button' style=
+'display:none;' onclick='switch_chart();'>Columns</button></div>
+<script type="text/javascript">
+                $(function() {
+                $('#switch_button').button();
+                $('#switch_button').show();
+                });
+</script>
+<div id="mychart"></div>
+<script type="text/javascript">
       (function() {
         YUI().use('charts', 'io-base', function (Y) { 
 
@@ -28,7 +53,7 @@
         if (!xmlDoc)
           return false;
         var tasks = xmlDoc.getElementsByTagName("task");
-        var myDataValues = new Array();
+        myDataValues = new Array();
 
         for (i=0;i<tasks.length;i++) {
           var category = tasks[i].getElementsByTagName("category")[0];
@@ -44,21 +69,57 @@
           if (!exists)
             myDataValues.push({"category":category.firstChild.nodeValue, "hours":parseFloat(value.firstChild.nodeValue)});
         }
-        var myTooltip = {
-					     styles : {
-					     backgroundColor: "#ffffff",
-					     color: "#000000",
-					     borderColor: "#fff",
-					     textAlign: "center"
+        myTooltip = {
+             styles : {
+                        backgroundColor: "#ffffff",
+                    color: "#000000",
+                    borderColor: "#fff",
+                    textAlign: "center"
+            }
+        };
 
+    theGraph = new Y.Chart({
+        render:"#mychart", 
+        categoryKey:"category",
+        seriesKeys:["hours"], 
+        dataProvider:myDataValues, 
+        type:"pie",
+        tooltip: myTooltip,
+        seriesCollection:[
+            {
+                categoryKey:"category",
+                valueKey:"hours"
+            }
+        ]
+    });
+   });
+ })();
 
-	    }
-	};
-
-        var pieGraph = new Y.Chart({
+     function switch_chart() {
+        theGraph.destroy();
+        YUI().use('charts', 'io-base', function (Y) { 
+                                                if ($('#switch_button').text() == "Columns") {
+                                                $('#switch_button').text('Pie Chart');
+        theGraph = new Y.Chart({
             render:"#mychart", 
             categoryKey:"category",
             seriesKeys:["hours"], 
+            dataProvider:myDataValues, 
+            type:"column",
+            tooltip: myTooltip,
+            seriesCollection:[
+                {
+                    categoryKey:"category",
+                    valueKey:"hours"
+                }
+            ]
+        });
+                } else {
+                        $('#switch_button').text('Columns');
+                theGraph = new Y.Chart({
+                        render:"#mychart", 
+          categoryKey:"category",
+                 seriesKeys:["hours"], 
             dataProvider:myDataValues, 
             type:"pie",
             tooltip: myTooltip,
@@ -69,8 +130,9 @@
                 }
             ]
         });
-       });
-     })();
-        </script>
-    </body>
+                }
+        });
+     }
+</script>
+</body>
 </html>
