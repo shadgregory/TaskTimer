@@ -53,3 +53,14 @@ img.title:hover span{ /*the span will display just on :hover state*/
     background-image:url(brownish.png);
     background-repeat:repeat;
 }
+
+#tooltip {
+	position: absolute;
+	z-index: 3000;
+	border: 1px solid #fff;
+	padding: 5px;
+	background-color: #9c947c;
+	color: #FFFFFF;
+}
+
+#tooltip h3, #tooltip div { margin: 0; }
