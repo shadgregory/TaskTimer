@@ -39,12 +39,12 @@ while (<FILE>) {
 	#if (!$hsh{$ip_address}) {
 	#	$hsh{$ip_address} = {};
 	#}
-    my @line_array = split(/\s/, $_);
-    my $ip_address = $line_array[0];
-    my $date = $line_array[3];
+	my @line_array = split(/\s/, $_);
+	my $ip_address = $line_array[0];
+	my $date = $line_array[3];
 	if ($_ =~ m/robots/) {
-		$robots_hsh{$ip_address} = 1;
-		next;
+	    $robots_hsh{$ip_address} = 1;
+	    next;
 	}
 	next if ($robots_hsh{$ip_address});
 	$date =~ s/\[//g;
@@ -57,14 +57,13 @@ while (<FILE>) {
 	$hour = $year_array[1];
 	$min = $year_array[2];
 	$sec = $year_array[3];
-    $date_object = Date::Calc->new(0, $year, $month_hash{$month}, $day, $hour, $min, $sec);
-	#$hsh{$ip_address}++;
+	$date_object = Date::Calc->new(0, $year, $month_hash{$month}, $day, $hour, $min, $sec);
 	$hsh{$ip_address}->{count} = 0 if (!$hsh{$ip_address}->{count});
 	$hsh{$ip_address}->{count}++;
 	if (!$hsh{$ip_address}->{date}){
-		$hsh{$ip_address}->{date} = $date_object 
+	    $hsh{$ip_address}->{date} = $date_object 
 	} elsif ($hsh{$ip_address}->{date} lt $date_object) {
-		$hsh{$ip_address}->{date} = $date_object 
+	    $hsh{$ip_address}->{date} = $date_object 
 	}
 }
 
